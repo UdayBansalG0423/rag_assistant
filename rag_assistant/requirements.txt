@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+# langchain
+faiss-cpu
+groq
+mlflow
+python-dotenv
+sentence-transformers
