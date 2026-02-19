@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from app.services.rag_pipeline import retrieve
 from app.services.rag_pipeline import  generate_rag_response , load_pdf_and_index
 
 
@@ -11,5 +12,9 @@ def load():
 
 @app.get("/ask")
 def ask(q: str):
-    answer = generate_rag_response(q)
-    return {"answer": answer}
+    results = retrieve(q)
+    return {"results": results}
+
+
+
+
