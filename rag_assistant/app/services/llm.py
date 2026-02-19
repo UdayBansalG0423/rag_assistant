@@ -1,13 +1,18 @@
-from groq import Groq
-from app.core.config import settings
+import requests
 
-client = Groq(api_key=settings.GROQ_API_KEY)
+OLLAMA_URL = "http://localhost:11434/api/generate"
 
 def generate_response(prompt: str):
-    completion = client.chat.completions.create(
-        model=settings.MODEL_NAME,
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
+    response = requests.post(
+        OLLAMA_URL,
+        json={
+            "model": "llama3:8b",
+            "prompt": prompt,
+            "stream": False
+        }
     )
-    return completion.choices[0].message.content
+
+    if response.status_code != 200:
+        raise Exception(f"Ollama Error: {response.text}")
+
+    return response.json()["response"]
