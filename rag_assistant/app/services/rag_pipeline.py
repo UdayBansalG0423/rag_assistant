@@ -2,6 +2,8 @@ from pypdf import PdfReader
 from .embedding import EmbeddingModel
 from app.services.retreiver import VectorStore
 from app.services.llm import generate_response
+from app.core.logger import logger
+import time
 
 SIMILARITY_THRESHOLD = 1.5  # adjust after testing
 
@@ -30,6 +32,12 @@ def retrieve(query: str):
 
 def generate_rag_response(query: str):
     retrieved_results = retrieve(query)
+    start_time = time.time()
+
+
+    retrieved_results = retrieve(query)
+    logger.info(f"Query: {query}")
+    logger.info(f"Retrieved count: {len(retrieved_results)}")
 
     filtered = [
         r for r in retrieved_results
@@ -37,9 +45,16 @@ def generate_rag_response(query: str):
     ]
 
     if not filtered:
+        logger.warning("No relevant context found.")
         return "No relevant information found."
 
+ 
     context = "\n\n".join([r["chunk"] for r in filtered])
+
+    answer = generate_response(prompt)
+
+    latency = time.time() - start_time
+    logger.info(f"Response time: {latency:.2f}s")
 
     prompt = f"""
     You are an AI assistant.
@@ -55,4 +70,4 @@ def generate_rag_response(query: str):
     Answer:
     """
 
-    return generate_response(prompt)
+    return answer
