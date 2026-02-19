@@ -9,7 +9,7 @@ import mlflow
 mlflow.set_experiment("RAG-Observability")
 
 
-SIMILARITY_THRESHOLD = 1.5  # adjust after testing
+SIMILARITY_THRESHOLD = 5.0  # adjust after testing
 
 embedding_model = EmbeddingModel()
 vector_store = None
@@ -38,8 +38,9 @@ def retrieve(query: str):
 
 def generate_rag_response(query: str):
     with mlflow.start_run():
-        mlflow.log_param("model_name", "phi3:mini")
+        mlflow.log_param("model_name", "ollama3:8b")
         mlflow.log_param("embedding_model", "all-MiniLM-L6-v2")
+        mlflow.log_param("system_version", "v1.1")
         mlflow.log_param("query", query)
 
         start_time = time.time()

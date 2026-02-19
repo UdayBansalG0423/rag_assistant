@@ -19,7 +19,7 @@ class VectorStore:
         for idx, dist in zip(indices[0], distances[0]):
 
             # Skip FAISS invalid placeholder values
-            if dist == 3.4028234663852886e+38:
+            if dist >= 1e30:
                 continue
 
             results.append({
@@ -28,4 +28,5 @@ class VectorStore:
             })
 
         return results
+
 
