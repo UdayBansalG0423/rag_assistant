@@ -14,4 +14,12 @@ class VectorStore:
         distances, indices = self.index.search(
             np.array([query_embedding]), k
         )
-        return [self.text_chunks[i] for i in indices[0]]
+
+        results = []
+        for idx, dist in zip(indices[0], distances[0]):
+            results.append({
+                "chunk": self.text_chunks[idx],
+                "score": float(dist)
+            })
+
+        return results
