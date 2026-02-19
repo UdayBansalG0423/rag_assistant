@@ -11,5 +11,16 @@ def load():
 
 @app.get("/ask")
 def ask(q: str):
-    answer = generate_rag_response(q)
+    try:
+        answer = generate_rag_response(q)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     return {"answer": answer}
+
+from app.services.rag_pipeline import retrieve
+
+@app.get("/debug-retrieval")
+def debug(q: str):
+    results = retrieve(q)
+    return {"results": results}
+

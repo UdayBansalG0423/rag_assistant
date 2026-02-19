@@ -17,9 +17,15 @@ class VectorStore:
 
         results = []
         for idx, dist in zip(indices[0], distances[0]):
+
+            # Skip FAISS invalid placeholder values
+            if dist == 3.4028234663852886e+38:
+                continue
+
             results.append({
                 "chunk": self.text_chunks[idx],
                 "score": float(dist)
             })
 
         return results
+
