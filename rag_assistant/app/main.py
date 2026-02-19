@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from app.services.rag_pipeline import load_pdf_and_index, retrieve
+from app.services.rag_pipeline import  generate_rag_response , load_pdf_and_index
+
 
 app = FastAPI()
 
@@ -10,8 +11,5 @@ def load():
 
 @app.get("/ask")
 def ask(q: str):
-    try:
-        chunks = retrieve(q)
-        return {"retrieved_chunks": chunks}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    answer = generate_rag_response(q)
+    return {"answer": answer}
