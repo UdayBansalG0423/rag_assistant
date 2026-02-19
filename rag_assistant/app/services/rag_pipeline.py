@@ -4,6 +4,10 @@ from app.services.retreiver import VectorStore
 from app.services.llm import generate_response
 from app.core.logger import logger
 import time
+import mlflow
+
+mlflow.set_experiment("RAG-Observability")
+
 
 SIMILARITY_THRESHOLD = 1.5  # adjust after testing
 
@@ -31,6 +35,13 @@ def retrieve(query: str):
 
 
 def generate_rag_response(query: str):
+    with mlflow.start_run():
+        mlflow.log_param("model_name", "phi3:mini")
+        mlflow.log_param("embedding_model", "all-MiniLM-L6-v2")
+        mlflow.log_param("query", query)
+        mlflow.log_metric("retrieved_count", len(filtered))
+        mlflow.log_metric("latency", latency)
+
     retrieved_results = retrieve(query)
     start_time = time.time()
 
