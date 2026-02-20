@@ -16,6 +16,7 @@ vector_store = None
 
 def load_pdf_and_index(path: str):
     global vector_store
+    vector_store.save()
 
     reader = PdfReader(path)
     text = ""
