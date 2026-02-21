@@ -11,5 +11,16 @@ def load():
 
 @app.get("/ask")
 def ask(q: str):
-    answer = rag_service.generate(q)
-    return {"answer": answer}
+    results = retrieve(q)
+    return {"results": results}
+
+@app.on_event("startup")
+def startup_event():
+    try:
+        vector_store.load()
+        print("Vector store loaded successfully.")
+    except:
+        print("No existing vector store found.")
+
+
+

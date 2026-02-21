@@ -9,7 +9,9 @@ import os
 
 SIMILARITY_THRESHOLD = 5.0
 
-class RAGService:
+def load_pdf_and_index(path: str):
+    global vector_store
+    vector_store.save()
 
     def __init__(self):
         self.embedding_model = EmbeddingModel()
