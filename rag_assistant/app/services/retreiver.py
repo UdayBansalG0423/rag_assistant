@@ -1,4 +1,5 @@
 import faiss
+import os
 import numpy as np
 
 class VectorStore:
@@ -28,5 +29,19 @@ class VectorStore:
             })
 
         return results
+    def save(self, path="vector_store"):
+        os.makedirs(path, exist_ok=True)
+        faiss.write_index(self.index, f"{path}/index.faiss")
+
+        with open(f"{path}/chunks.pkl", "wb") as f:
+            import pickle
+            pickle.dump(self.text_chunks, f)
+
+    def load(self, path="vector_store"):
+        import pickle
+        self.index = faiss.read_index(f"{path}/index.faiss")
+
+        with open(f"{path}/chunks.pkl", "rb") as f:
+            self.text_chunks = pickle.load(f)
 
 
