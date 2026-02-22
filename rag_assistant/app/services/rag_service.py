@@ -32,7 +32,8 @@ class RAGService:
         chunks = [text[i:i+500] for i in range(0, len(text), 500)]
         embeddings = self.embedding_model.encode(chunks)
 
-        self.vector_store.add_embeddings(embeddings, chunks)
+        doc_id = os.path.basename(path)
+        self.vector_store.add_embeddings(embeddings, chunks, doc_id)
         self.vector_store.save()
 
     def retrieve(self, query: str):
@@ -50,6 +51,8 @@ class RAGService:
             r for r in retrieved_results
             if r["score"] <= SIMILARITY_THRESHOLD
         ]
+
+        sources = list(set([r["doc_id"] for r in filtered]))
 
         if not filtered:
             return "No relevant information found."
@@ -77,4 +80,7 @@ Answer:
         logger.info(f"Retrieved count: {len(filtered)}")
         logger.info(f"Latency: {latency:.2f}s")
 
-        return answer
+        return {
+            "answer": answer,
+            "sources": sources
+        }

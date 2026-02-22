@@ -11,5 +11,5 @@ def load():
 
 @app.get("/ask")
 def ask(q: str):
-    answer = rag_service.generate(q)
-    return {"answer": answer}
+    result = rag_service.generate(q)
+    return result
