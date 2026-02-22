@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File
 from app.services.rag_service import RAGService
+from app.schemas.response import AskResponse
 import os
 
 app = FastAPI()
@@ -27,7 +28,13 @@ async def upload_pdf(file: UploadFile = File(...)):
         "filename": file.filename
     }
 
-@app.get("/ask")
+@app.get("/ask", response_model=AskResponse)
 def ask(q: str):
-    result = rag_service.generate(q)
-    return result
+    if not q.strip():
+        return {
+            "answer": "Query cannot be empty.",
+            "sources": [],
+            "latency": 0.0
+        }
+
+    return rag_service.generate(q)

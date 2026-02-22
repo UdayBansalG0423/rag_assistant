@@ -74,7 +74,7 @@ Answer:
 """
 
         answer = generate_response(prompt)
-        latency = time.time() - start_time
+        latency = round(time.time() - start_time, 2)
 
         logger.info(f"Query: {query}")
         logger.info(f"Retrieved count: {len(filtered)}")
@@ -82,5 +82,6 @@ Answer:
 
         return {
             "answer": answer,
-            "sources": sources
+            "sources": sources,
+            "latency": latency
         }
