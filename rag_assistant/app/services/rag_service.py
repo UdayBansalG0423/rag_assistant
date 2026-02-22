@@ -85,3 +85,8 @@ Answer:
             "sources": sources,
             "latency": latency
         }
+    def has_documents(self):
+        return len(self.vector_store.documents) > 0
+
+    def get_documents(self):
+        return list(set([doc["doc_id"] for doc in self.vector_store.documents]))
