@@ -46,3 +46,11 @@ def ask(q: str):
         }
 
     return rag_service.generate(q)
+
+@app.get("/status")
+def status():
+    return {"documents_indexed": rag_service.has_documents()}
+
+@app.get("/documents")
+def list_docs():
+    return {"documents": rag_service.get_documents()}
