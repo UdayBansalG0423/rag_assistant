@@ -5,11 +5,15 @@ import numpy as np
 class VectorStore:
     def __init__(self, dim: int):
         self.index = faiss.IndexFlatL2(dim)
-        self.text_chunks = []
+        self.documents = []  # list of {"chunk": ..., "doc_id": ...}
 
-    def add_embeddings(self, embeddings, texts):
+    def add_embeddings(self, embeddings, texts, doc_id):
         self.index.add(np.array(embeddings))
-        self.text_chunks.extend(texts)
+        for text in texts:
+            self.documents.append({
+                "chunk": text,
+                "doc_id": doc_id  # temporary, will assign in service
+    })
 
     def search(self, query_embedding, k=3):
         distances, indices = self.index.search(
@@ -24,7 +28,8 @@ class VectorStore:
                 continue
 
             results.append({
-                "chunk": self.text_chunks[idx],
+                "chunk": self.documents[idx]["chunk"],
+                "doc_id": self.documents[idx]["doc_id"],
                 "score": float(dist)
             })
 
@@ -35,13 +40,13 @@ class VectorStore:
 
         with open(f"{path}/chunks.pkl", "wb") as f:
             import pickle
-            pickle.dump(self.text_chunks, f)
+            pickle.dump(self.documents, f)
 
     def load(self, path="vector_store"):
         import pickle
         self.index = faiss.read_index(f"{path}/index.faiss")
 
         with open(f"{path}/chunks.pkl", "rb") as f:
-            self.text_chunks = pickle.load(f)
+            self.documents = pickle.load(f)
 
 
