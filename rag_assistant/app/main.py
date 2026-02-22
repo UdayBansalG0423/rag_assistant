@@ -1,6 +1,8 @@
 from fastapi import FastAPI, UploadFile, File
 from app.services.rag_service import RAGService
 from app.schemas.response import AskResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import os
 
 app = FastAPI()
@@ -8,6 +10,12 @@ rag_service = RAGService()
 
 UPLOAD_DIR = "data"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+@app.get("/")
+def serve_frontend():
+    return FileResponse("app/static/index.html")
 
 
 @app.post("/upload")
