@@ -1,11 +1,14 @@
 from pypdf import PdfReader
 from .embedding import EmbeddingModel
 from app.services.retreiver import VectorStore
+from app.services.pinecone_store import PineconeVectorStore
 from .llm import generate_response
 from app.core.logger import logger
 import time
 import mlflow
 import os
+from dotenv import load_dotenv      
+load_dotenv()
 
 SIMILARITY_THRESHOLD = 5.0
 
@@ -13,14 +16,19 @@ class RAGService:
 
     def __init__(self):
         self.embedding_model = EmbeddingModel()
-        self.vector_store = VectorStore(384)
+        self.vector_provider = os.getenv("VECTOR_DB_PROVIDER")
 
-        # Try loading existing index
-        if os.path.exists("vector_store/index.faiss"):
-            self.vector_store.load()
-            print("Vector store loaded successfully.")
+        if self.vector_provider == "pinecone":
+            self.vector_store = PineconeVectorStore(384)
+            print("Using Pinecone vector store.")
         else:
-            print("No existing vector store found.")
+            self.vector_store = VectorStore(384)
+            # Try loading existing index
+            if os.path.exists("vector_store/index.faiss"):
+                self.vector_store.load()
+                print("Vector store loaded successfully.")
+            else:
+                print("No existing vector store found.")
 
     def index_pdf(self, path: str):
         reader = PdfReader(path)
@@ -34,7 +42,9 @@ class RAGService:
 
         doc_id = os.path.basename(path)
         self.vector_store.add_embeddings(embeddings, chunks, doc_id)
-        self.vector_store.save()
+        if self.vector_provider != "pinecone":
+            self.vector_store.save()
+        
 
     def retrieve(self, query: str):
         query_embedding = self.embedding_model.encode([query])[0]
@@ -86,7 +96,9 @@ Answer:
             "latency": latency
         }
     def has_documents(self):
-        return len(self.vector_store.documents) > 0
+        return len(self.get_documents()) > 0
 
     def get_documents(self):
+        if self.vector_provider == "pinecone":
+            return self.vector_store.get_documents()
         return list(set([doc["doc_id"] for doc in self.vector_store.documents]))

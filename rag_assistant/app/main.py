@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv(override=True)  # Must be first — loads .env before any service reads os.getenv()
+
 from fastapi import FastAPI, UploadFile, File
 from app.services.rag_service import RAGService
 from app.schemas.response import AskResponse

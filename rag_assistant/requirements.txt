@@ -7,3 +7,5 @@ mlflow
 python-dotenv
 sentence-transformers
 google-generativeai
+pinecone-client
+pinecone
