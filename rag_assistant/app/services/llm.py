@@ -1,13 +1,13 @@
 import os
 import requests
-import google.generativeai as genai
+from google import genai
+from dotenv import load_dotenv
 
-
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama")
-
+load_dotenv()
 
 def generate_response(prompt: str) -> str:
-    if LLM_PROVIDER == "gemini":
+    llm_provider = os.getenv("LLM_PROVIDER", "ollama")
+    if llm_provider == "gemini":
         return call_gemini(prompt)
     else:
         return call_ollama(prompt)
@@ -34,10 +34,10 @@ def call_gemini(prompt: str) -> str:
     if not api_key:
         raise Exception("GEMINI_API_KEY not set")
 
-    genai.configure(api_key=api_key)
-
-    model = genai.GenerativeModel("gemini-1.5-flash")
-
-    response = model.generate_content(prompt)
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model="gemini-1.5-flash",
+        contents=prompt
+    )
 
     return response.text
