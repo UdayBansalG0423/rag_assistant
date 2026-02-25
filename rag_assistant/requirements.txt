@@ -6,3 +6,4 @@ groq
 mlflow
 python-dotenv
 sentence-transformers
+google-generativeai
