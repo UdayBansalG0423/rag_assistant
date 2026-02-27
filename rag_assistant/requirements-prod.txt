@@ -2,10 +2,13 @@ fastapi
 uvicorn
 pypdf
 pinecone
+groq
 google-genai
 mlflow
 python-dotenv
 python-multipart
-sentence-transformers
-torch==2.2.2+cpu
+numpy<2
+torch==2.4.0+cpu
 --extra-index-url https://download.pytorch.org/whl/cpu
+sentence-transformers==2.7.0
+transformers==4.41.2

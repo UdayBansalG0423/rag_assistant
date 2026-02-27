@@ -1,17 +1,16 @@
-from dotenv import load_dotenv
-load_dotenv(override=True)  # Must be first — loads .env before any service reads os.getenv()
-
+import os
 from fastapi import FastAPI, UploadFile, File
 from app.services.rag_service import RAGService
 from app.schemas.response import AskResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-import os
+from app.core.config import settings
+
 
 app = FastAPI()
 rag_service = RAGService()
 
-UPLOAD_DIR = "data"
+UPLOAD_DIR = settings.UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
