@@ -35,9 +35,17 @@ def call_gemini(prompt: str) -> str:
         raise Exception("GEMINI_API_KEY not set")
 
     client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model="gemini-1.5-flash",
-        contents=prompt
-    )
 
-    return response.text
+    import time
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.0-flash-lite",
+                contents=prompt
+            )
+            return response.text
+        except Exception as e:
+            if "429" in str(e) and attempt < 2:
+                time.sleep(15 * (attempt + 1))
+                continue
+            raise Exception(f"Gemini error: {str(e)}")

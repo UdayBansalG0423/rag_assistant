@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pypdf
+pinecone
+google-genai
+mlflow
+python-dotenv
+python-multipart
+sentence-transformers
+torch==2.2.2+cpu
+--extra-index-url https://download.pytorch.org/whl/cpu

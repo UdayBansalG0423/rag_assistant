@@ -1,11 +1,9 @@
 fastapi
 uvicorn
-# langchain
+pypdf
+sentence-transformers
+torch
 faiss-cpu
-groq
 mlflow
 python-dotenv
-sentence-transformers
-google-generativeai
-pinecone-client
-pinecone
+multipart

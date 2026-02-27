@@ -1,5 +1,5 @@
 from pypdf import PdfReader
-from .embedding import EmbeddingModel
+from app.services.embedding_provider import EmbeddingProvider
 from app.services.retreiver import VectorStore
 from app.services.pinecone_store import PineconeVectorStore
 from .llm import generate_response
@@ -15,7 +15,7 @@ SIMILARITY_THRESHOLD = 5.0
 class RAGService:
 
     def __init__(self):
-        self.embedding_model = EmbeddingModel()
+        self.embedding_provider = EmbeddingProvider()
         self.vector_provider = os.getenv("VECTOR_DB_PROVIDER")
 
         if self.vector_provider == "pinecone":
@@ -38,7 +38,7 @@ class RAGService:
             text += page.extract_text()
 
         chunks = [text[i:i+500] for i in range(0, len(text), 500)]
-        embeddings = self.embedding_model.encode(chunks)
+        embeddings = self.embedding_provider.embed(chunks)
 
         doc_id = os.path.basename(path)
         self.vector_store.add_embeddings(embeddings, chunks, doc_id)
@@ -47,7 +47,7 @@ class RAGService:
         
 
     def retrieve(self, query: str):
-        query_embedding = self.embedding_model.encode([query])[0]
+        query_embedding = self.embedding_provider.embed([query])[0]
         return self.vector_store.search(query_embedding)
 
     def generate(self, query: str):
