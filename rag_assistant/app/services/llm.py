@@ -1,17 +1,17 @@
 import os
 import requests
-from google import genai
-from dotenv import load_dotenv
+from app.core.config import settings
 
-load_dotenv()
+def generate_response(prompt: str):
+    provider = settings.LLM_PROVIDER
 
-def generate_response(prompt: str) -> str:
-    llm_provider = os.getenv("LLM_PROVIDER", "ollama")
-    if llm_provider == "gemini":
+    if provider == "groq":
+        return call_groq(prompt)
+    elif provider == "gemini":
         return call_gemini(prompt)
     else:
         return call_ollama(prompt)
-
+    
 
 def call_ollama(prompt: str) -> str:
     response = requests.post(
@@ -30,6 +30,7 @@ def call_ollama(prompt: str) -> str:
 
 
 def call_gemini(prompt: str) -> str:
+    from google import genai
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise Exception("GEMINI_API_KEY not set")
@@ -49,3 +50,14 @@ def call_gemini(prompt: str) -> str:
                 time.sleep(15 * (attempt + 1))
                 continue
             raise Exception(f"Gemini error: {str(e)}")
+        
+def call_groq(prompt: str) -> str:
+    from groq import Groq
+    client = Groq(api_key=settings.GROQ_API_KEY)
+    response = client.chat.completions.create(
+        model=settings.MODEL_NAME or "llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+        max_tokens=1024,
+    )
+    return response.choices[0].message.content
