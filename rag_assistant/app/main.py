@@ -5,9 +5,28 @@ from app.schemas.response import AskResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.core.config import settings
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException
+from jose import jwt
+from app.core.security import SECRET_KEY, ALGORITHM
+from app.routes.auth import router as auth_router
+from app.core.database import init_db
+
+security = HTTPBearer()
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload["sub"]
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 app = FastAPI()
+
+init_db()  # Create DB tables on startup
+app.include_router(auth_router)  # Register /register and /login
+
 rag_service = RAGService()
 
 UPLOAD_DIR = settings.UPLOAD_DIR
@@ -21,7 +40,7 @@ def serve_frontend():
 
 
 @app.post("/upload")
-async def upload_pdf(file: UploadFile = File(...)):
+async def upload_pdf(file: UploadFile = File(...), current_user: str = Depends(get_current_user)):
     if not file.filename.endswith(".pdf"):
         return {"error": "Only PDF files are allowed."}
 
@@ -39,7 +58,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     }
 
 @app.get("/ask", response_model=AskResponse)
-def ask(q: str):
+def ask(q: str, current_user: str = Depends(get_current_user)):
     if not q.strip():
         return {
             "answer": "Query cannot be empty.",

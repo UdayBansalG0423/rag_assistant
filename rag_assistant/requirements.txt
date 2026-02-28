@@ -7,3 +7,5 @@ faiss-cpu
 mlflow
 python-dotenv
 multipart
+python-jose[cryptography]
+passlib[bcrypt]
