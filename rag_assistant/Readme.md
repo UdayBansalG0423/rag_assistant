@@ -44,7 +44,7 @@ NeuralDoc AI solves these problems by providing a modular, secure, scalable RAG 
 
 ## 🏗 System Architecture
 
-![Architecture Diagram](assets/architecture.png)
+![Architecture Diagram](assets/architecturaldiagram.png)
 
 Key Design Decisions:
 
