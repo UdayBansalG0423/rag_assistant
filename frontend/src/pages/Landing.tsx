@@ -1,6 +1,6 @@
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { ArrowRight, Upload, Cpu, MessageSquare, Zap } from "lucide-react";
@@ -118,6 +118,12 @@ function StepCard({ step, index }: { step: typeof ragSteps[0]; index: number }) 
 export default function Landing() {
   const navigate = useNavigate();
   const { user, isAuthenticated, signOut } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
   
   const handleSignOut = async () => {
     await signOut();
@@ -133,7 +139,7 @@ export default function Landing() {
         <div className="flex items-center gap-2">
           <Logo className="w-8 h-8 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
           <span className="font-semibold text-lg tracking-tight hidden sm:block bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
-            BrainBase
+            NeuralDoc
           </span>
         </div>
       </div>
@@ -148,7 +154,7 @@ export default function Landing() {
             transition={{ duration: 0.3 }}
             className="absolute top-4 right-6 z-50 flex items-center gap-4 text-sm font-medium"
           >
-            <span className="text-white/40">{user.email}</span>
+            <span className="text-white/40">{user.username}</span>
             <Button
               variant="ghost"
               size="sm"
@@ -235,10 +241,10 @@ export default function Landing() {
                   >
                     <Button
                       size="lg"
-                      onClick={() => navigate("/chat")}
+                      onClick={() => navigate("/dashboard")}
                       className="gap-2 px-8 bg-white text-black hover:bg-white/90 font-semibold"
                     >
-                      Open Chat
+                      Open Dashboard
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </motion.div>
@@ -411,7 +417,7 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Logo className="w-4 h-4 drop-shadow-[0_0_4px_rgba(99,102,241,0.5)]" />
-            <span className="text-xs font-medium text-white">BrainBase</span>
+            <span className="text-xs font-medium text-white">NeuralDoc</span>
           </div>
           <p className="text-xs text-white/30">
             Built with Convex, React, and GPT-4o-mini

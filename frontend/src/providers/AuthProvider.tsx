@@ -1,61 +1,81 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "../lib/supabase";
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
+import { loginUser, registerUser } from "@/lib/api";
+import {
+  AuthUser,
+  clearStoredToken,
+  decodeAuthToken,
+  getStoredToken,
+  setStoredToken,
+} from "@/lib/auth";
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: AuthUser | null;
+  token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    const storedToken = getStoredToken();
 
-    // Listen for auth changes
-    const {
-      data: { subscription }, // Note: we are assigning this correctly to be safe and clean
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    if (!storedToken) {
       setIsLoading(false);
-    });
+      return;
+    }
 
-    return () => subscription.unsubscribe();
+    const decodedUser = decodeAuthToken(storedToken);
+    if (!decodedUser) {
+      clearStoredToken();
+      setIsLoading(false);
+      return;
+    }
+
+    setToken(storedToken);
+    setUser(decodedUser);
+    setIsLoading(false);
   }, []);
 
-  const signOut = async () => {
-    setIsLoading(true);
-    await supabase.auth.signOut();
-    setIsLoading(false);
+  const login = async (username: string, password: string) => {
+    const response = await loginUser({ username, password });
+    setStoredToken(response.access_token);
+    setToken(response.access_token);
+    setUser(decodeAuthToken(response.access_token));
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        isAuthenticated: !!user,
-        isLoading,
-        signOut,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const register = async (username: string, password: string) => {
+    await registerUser({ username, password });
+  };
+
+  const signOut = async () => {
+    clearStoredToken();
+    setUser(null);
+    setToken(null);
+  };
+
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      isAuthenticated: !!user,
+      isLoading,
+      login,
+      register,
+      signOut,
+    }),
+    [user, token, isLoading],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

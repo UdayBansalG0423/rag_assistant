@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from fastapi import FastAPI, UploadFile, File
 from app.services.rag_service import RAGService
 from app.schemas.response import AskResponse
@@ -13,6 +14,8 @@ from app.routes.auth import router as auth_router
 from app.core.database import init_db
 
 security = HTTPBearer()
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -25,21 +28,22 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 app = FastAPI()
 
 init_db()  # Create DB tables on startup
-app.include_router(auth_router)  # Register /register and /login
+app.include_router(auth_router, prefix="/api")  # Register /api/register and /api/login
 
 rag_service = RAGService()
 
 UPLOAD_DIR = settings.UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/")
 def serve_frontend():
-    return FileResponse("app/static/index.html")
+    return FileResponse(STATIC_DIR / "index.html")
 
 
-@app.post("/upload")
+@app.post("/api/upload")
 async def upload_pdf(file: UploadFile = File(...), current_user: str = Depends(get_current_user)):
     if not file.filename.endswith(".pdf"):
         return {"error": "Only PDF files are allowed."}
@@ -57,7 +61,7 @@ async def upload_pdf(file: UploadFile = File(...), current_user: str = Depends(g
         "filename": file.filename
     }
 
-@app.get("/ask", response_model=AskResponse)
+@app.get("/api/ask", response_model=AskResponse)
 def ask(q: str, current_user: str = Depends(get_current_user)):
     if not q.strip():
         return {
@@ -68,10 +72,10 @@ def ask(q: str, current_user: str = Depends(get_current_user)):
 
     return rag_service.generate(q)
 
-@app.get("/status")
+@app.get("/api/status")
 def status():
     return {"documents_indexed": rag_service.has_documents()}
 
-@app.get("/documents")
+@app.get("/api/documents")
 def list_docs():
     return {"documents": rag_service.get_documents()}

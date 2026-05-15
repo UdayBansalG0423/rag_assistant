@@ -65,7 +65,15 @@ class RAGService:
         sources = list(set([r["doc_id"] for r in filtered]))
 
         if not filtered:
-            return "No relevant information found."
+            latency = round(time.time() - start_time, 2)
+            logger.info(f"Query: {query}")
+            logger.info("Retrieved count: 0")
+            logger.info(f"Latency: {latency:.2f}s")
+            return {
+                "answer": "No relevant information found.",
+                "sources": [],
+                "latency": latency,
+            }
 
         context = "\n\n".join([r["chunk"] for r in filtered])
 

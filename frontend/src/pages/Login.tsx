@@ -2,33 +2,29 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { supabase } from "../lib/supabase";
-import { Plus } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
-    else navigate("/");
-    setLoading(false);
-  };
-
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "google" });
-    if (error) setError(error.message);
-    setLoading(false);
+    try {
+      await login(username.trim(), password);
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Unable to sign in");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,24 +34,24 @@ export default function Login() {
           
           <div className="flex items-center gap-3 mb-10">
             <Logo className="w-8 h-8 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-            <span className="text-white font-bold text-[18px] tracking-tight">BrainBase</span>
+            <span className="text-white font-bold text-[18px] tracking-tight">NeuralDoc</span>
           </div>
 
           <h2 className="text-[26px] font-bold text-white mb-2 tracking-tight">Welcome back</h2>
-          <p className="text-sm text-slate-500 mb-8 font-medium">Sign in to access your knowledge base.</p>
+          <p className="text-sm text-slate-500 mb-8 font-medium">Sign in with your backend username to access the workspace.</p>
 
           <form className="space-y-4" onSubmit={handleEmailLogin}>
             {error && <div className="text-red-400 text-sm">{error}</div>}
             
             <div>
-              <label className="block text-[13px] font-medium text-slate-400 mb-2">Email</label>
+              <label className="block text-[13px] font-medium text-slate-400 mb-2">Username</label>
               <Input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="bg-white/[0.04] border-white/[0.08] text-white rounded-[8px] focus-visible:ring-1 focus-visible:ring-white/20 h-11 shadow-none"
-                placeholder="you@example.com"
+                placeholder="your-username"
               />
             </div>
 
