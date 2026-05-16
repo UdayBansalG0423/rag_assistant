@@ -6,7 +6,8 @@ import { Logo } from "@/components/Logo";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function SignUp() {
-  const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,9 +22,9 @@ export default function SignUp() {
     setSuccessMsg(null);
 
     try {
-      await register(username.trim(), password);
-      setSuccessMsg("Account created. You can sign in now.");
-      setTimeout(() => navigate("/login"), 1800);
+      await register(name.trim(), email.trim(), password);
+      setSuccessMsg("Account created! Check your email to verify, then sign in.");
+      setTimeout(() => navigate("/login"), 2500);
     } catch (err: any) {
       setError(err.message || "Unable to sign up");
     } finally {
@@ -42,7 +43,7 @@ export default function SignUp() {
           </div>
 
           <h2 className="text-[26px] font-bold text-white mb-2 tracking-tight">Create an account</h2>
-          <p className="text-sm text-slate-500 mb-8 font-medium">Create a backend user account for the workspace.</p>
+          <p className="text-sm text-slate-500 mb-8 font-medium">Sign up to start using NeuralDoc AI.</p>
 
           <form className="space-y-4" onSubmit={handleEmailSignUp}>
             {error && <div className="text-red-400 text-[13px]">{error}</div>}
@@ -58,6 +59,21 @@ export default function SignUp() {
                 className="bg-white/[0.04] border-white/[0.08] text-white rounded-[8px] focus-visible:ring-1 focus-visible:ring-white/20 h-11 shadow-none"
                 placeholder="your-username"
               />
+
+                        <div>
+                          <label className="block text-[13px] font-medium text-slate-400 mb-2">Email</label>
+                          <Input
+                            type="email"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="bg-white/[0.04] border-white/[0.08] text-white rounded-[8px] focus-visible:ring-1 focus-visible:ring-white/20 h-11 shadow-none"
+                            placeholder="you@example.com"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[13px] font-medium text-slate-400 mb-2">Password</label>
             </div>
 
             <div>
@@ -69,7 +85,7 @@ export default function SignUp() {
                 onChange={(e) => setPassword(e.target.value)}
                 minLength={6}
                 className="bg-white/[0.04] border-white/[0.08] text-white rounded-[8px] focus-visible:ring-1 focus-visible:ring-white/20 h-11 shadow-none tracking-widest placeholder:tracking-normal"
-                placeholder="��������"
+                placeholder="••••••"
               />
             </div>
 

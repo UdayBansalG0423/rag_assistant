@@ -1,12 +1,26 @@
-import { clearStoredToken, getStoredToken } from "./auth";
+import {
+  clearStoredToken,
+  getStoredToken,
+  setStoredRefreshToken,
+  setStoredUserId,
+} from "./auth";
 
-type Credentials = {
-  username: string;
+type SignUpCredentials = {
+  name: string;
+  email: string;
+  password: string;
+};
+
+type LoginCredentials = {
+  email: string;
   password: string;
 };
 
 type AuthResponse = {
   access_token: string;
+  refresh_token: string;
+  user_id: string;
+  email: string;
   token_type: string;
 };
 
@@ -45,8 +59,10 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   return { Authorization: `Bearer ${token}` };
 }
 
-export async function registerUser(credentials: Credentials): Promise<{ message: string }> {
-  return request("/api/register", {
+export async function registerUser(
+  credentials: SignUpCredentials,
+): Promise<{ message: string; user_id: string; email: string }> {
+  return request("/auth/signup", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -55,8 +71,10 @@ export async function registerUser(credentials: Credentials): Promise<{ message:
   });
 }
 
-export async function loginUser(credentials: Credentials): Promise<AuthResponse> {
-  return request("/api/login", {
+export async function loginUser(
+  credentials: LoginCredentials,
+): Promise<AuthResponse> {
+  return request("/auth/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

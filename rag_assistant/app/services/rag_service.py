@@ -30,7 +30,7 @@ class RAGService:
             else:
                 print("No existing vector store found.")
 
-    def index_pdf(self, path: str):
+    def index_pdf(self, path: str, user_id: str = None):
         reader = PdfReader(path)
         text = ""
 
@@ -41,21 +41,27 @@ class RAGService:
         embeddings = self.embedding_provider.embed(chunks)
 
         doc_id = os.path.basename(path)
-        self.vector_store.add_embeddings(embeddings, chunks, doc_id)
-        if self.vector_provider != "pinecone":
-            self.vector_store.save()
+        # default: no user namespace
+        if self.vector_provider == "pinecone":
+            self.vector_store.add_embeddings(embeddings, chunks, doc_id, namespace=user_id)
+        else:
+            self.vector_store.add_embeddings(embeddings, chunks, user_id=user_id)
+            self.vector_store.save(f"vector_store/{user_id}" if user_id else "vector_store")
         
 
-    def retrieve(self, query: str):
+    def retrieve(self, query: str, user_id: str = None):
         query_embedding = self.embedding_provider.embed([query])[0]
-        return self.vector_store.search(query_embedding)
+        if self.vector_provider == "pinecone":
+            return self.vector_store.search(query_embedding, namespace=user_id)
+        else:
+            return self.vector_store.search(query_embedding, user_id=user_id)
 
-    def generate(self, query: str):
+    def generate(self, query: str, user_id: str = None):
 
         mlflow.set_experiment("RAG-Observability")
 
         start_time = time.time()
-        retrieved_results = self.retrieve(query)
+        retrieved_results = self.retrieve(query, user_id=user_id)
 
         filtered = [
             r for r in retrieved_results
@@ -107,6 +113,23 @@ Answer:
         return len(self.get_documents()) > 0
 
     def get_documents(self):
+        # Note: for tenant isolation, prefer calling get_documents(user_id)
         if self.vector_provider == "pinecone":
             return self.vector_store.get_documents()
-        return list(set([doc["doc_id"] for doc in self.vector_store.documents]))
+        # For FAISS path, attempt to list any saved doc ids across stored chunks
+        # This is a simple fallback; per-user listing is handled by passing user_id to load/search
+        docs = set()
+        # try to introspect saved vector_store folder
+        base = "vector_store"
+        if os.path.exists(base):
+            for root, _, files in os.walk(base):
+                if "chunks.pkl" in files:
+                    try:
+                        import pickle
+                        with open(os.path.join(root, "chunks.pkl"), "rb") as f:
+                            chunks = pickle.load(f)
+                        # we don't have doc_id metadata here; skip
+                        docs.add(os.path.basename(root))
+                    except Exception:
+                        pass
+        return list(docs)
