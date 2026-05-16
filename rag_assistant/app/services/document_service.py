@@ -33,8 +33,9 @@ class DocumentService:
         record = {
             "id": document_id,
             "user_id": user_id,
-            "filename": filename,
+            "file_name": file.filename,
             "storage_path": storage_path,
+            "status": "processing"
         }
 
         supabase_admin.table("documents").insert(record).execute()

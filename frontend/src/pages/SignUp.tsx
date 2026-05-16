@@ -54,26 +54,23 @@ export default function SignUp() {
               <Input
                 type="text"
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="bg-white/[0.04] border-white/[0.08] text-white rounded-[8px] focus-visible:ring-1 focus-visible:ring-white/20 h-11 shadow-none"
                 placeholder="your-username"
               />
+            </div>
 
-                        <div>
-                          <label className="block text-[13px] font-medium text-slate-400 mb-2">Email</label>
-                          <Input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="bg-white/[0.04] border-white/[0.08] text-white rounded-[8px] focus-visible:ring-1 focus-visible:ring-white/20 h-11 shadow-none"
-                            placeholder="you@example.com"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[13px] font-medium text-slate-400 mb-2">Password</label>
+            <div>
+              <label className="block text-[13px] font-medium text-slate-400 mb-2">Email</label>
+              <Input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-white/[0.04] border-white/[0.08] text-white rounded-[8px] focus-visible:ring-1 focus-visible:ring-white/20 h-11 shadow-none"
+                placeholder="you@example.com"
+              />
             </div>
 
             <div>
