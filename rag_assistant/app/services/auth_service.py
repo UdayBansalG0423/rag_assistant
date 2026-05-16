@@ -1,7 +1,10 @@
 from app.core.supabase_client import supabase, supabase_admin
 from pydantic import BaseModel, EmailStr
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from datetime import datetime
+
+security = HTTPBearer()
 
 class SignUpRequest(BaseModel):
     name: str
@@ -113,28 +116,38 @@ async def get_current_user(token: str) -> CurrentUserResponse:
     Verify JWT token and return current user info from Supabase
     """
     try:
-        # Get user from token
-        user = supabase.auth.get_user(token)
-        
-        if not user:
+        user_response = supabase.auth.get_user(token)
+        user = getattr(user_response, "user", None) or user_response
+
+        user_id = getattr(user, "id", None)
+        user_email = getattr(user, "email", None)
+
+        if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token")
         
         # Get additional profile data
         try:
-            profile = supabase.table("profiles").select("*").eq("id", user.id).single().execute()
+            profile = supabase.table("profiles").select("*").eq("id", user_id).single().execute()
             profile_data = profile.data
             name = profile_data.get("name") if profile_data else None
         except:
-            name = user.user_metadata.get("name") if user.user_metadata else None
+            user_metadata = getattr(user, "user_metadata", None) or {}
+            name = user_metadata.get("name")
         
         return CurrentUserResponse(
-            id=user.id,
-            email=user.email,
+            id=user_id,
+            email=user_email or "",
             name=name
         )
     
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+async def get_current_user_from_credentials(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> CurrentUserResponse:
+    return await get_current_user(credentials.credentials)
 
 
 async def refresh_token(refresh_token: str):

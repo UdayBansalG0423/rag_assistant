@@ -1,7 +1,6 @@
 from pypdf import PdfReader
 from app.services.embedding_provider import EmbeddingProvider
 from app.services.retreiver import VectorStore
-from app.services.pinecone_store import PineconeVectorStore
 from .llm import generate_response
 from app.core.logger import logger
 import time
@@ -16,13 +15,22 @@ class RAGService:
 
     def __init__(self):
         self.embedding_provider = EmbeddingProvider()
-        self.vector_provider = os.getenv("VECTOR_DB_PROVIDER")
+        self.vector_provider = os.getenv("VECTOR_DB_PROVIDER", "faiss")
 
         if self.vector_provider == "pinecone":
-            self.vector_store = PineconeVectorStore(384)
-            print("Using Pinecone vector store.")
+            try:
+                from app.services.pinecone_store import PineconeVectorStore
+
+                self.vector_store = PineconeVectorStore(384)
+                print("Using Pinecone vector store.")
+            except Exception as exc:
+                logger.warning(f"Falling back to FAISS vector store: {exc}")
+                self.vector_provider = "faiss"
+                self.vector_store = VectorStore(384)
         else:
             self.vector_store = VectorStore(384)
+
+        if self.vector_provider != "pinecone":
             # Try loading existing index
             if os.path.exists("vector_store/index.faiss"):
                 self.vector_store.load()

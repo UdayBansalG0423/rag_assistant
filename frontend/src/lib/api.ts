@@ -24,6 +24,14 @@ type AuthResponse = {
   token_type: string;
 };
 
+type DocumentRecord = {
+  id: string;
+  user_id: string;
+  filename: string;
+  storage_path: string;
+  created_at?: string | null;
+};
+
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers || {});
   const token = getStoredToken();
@@ -88,12 +96,12 @@ export async function loginUser(
 /** Upload a PDF file to the backend for indexing. */
 export async function uploadPdf(
   file: File,
-): Promise<{ status: string; filename: string }> {
+): Promise<{ message: string; filename: string; id: string; user_id: string; storage_path: string }> {
   const headers = await getAuthHeaders();
   const form = new FormData();
   form.append('file', file);
 
-  return request('/api/upload', {
+  return request('/upload', {
     method: 'POST',
     headers,          // Content-Type is set automatically by the browser for FormData
     body: form,
@@ -105,7 +113,7 @@ export async function askQuery(
   query: string,
 ): Promise<{ answer: string; sources: string[]; latency: number }> {
   const headers = await getAuthHeaders();
-  const result = await request<{ answer?: string; sources?: string[]; latency?: number } | string>(`/api/ask?q=${encodeURIComponent(query)}`, {
+  const result = await request<{ answer?: string; sources?: string[]; latency?: number } | string>(`/ask?q=${encodeURIComponent(query)}`, {
     headers,
   });
 
@@ -121,13 +129,7 @@ export async function askQuery(
 }
 
 /** Retrieve the list of indexed documents. */
-export async function getDocuments(): Promise<{ documents: any[] }> {
+export async function getDocuments(): Promise<{ documents: DocumentRecord[] }> {
   const headers = await getAuthHeaders();
-  return request('/api/documents', { headers });
-}
-
-/** Check whether any documents have been indexed. */
-export async function getStatus(): Promise<{ documents_indexed: boolean }> {
-  const headers = await getAuthHeaders();
-  return request('/api/status', { headers });
+  return request('/documents', { headers });
 }

@@ -16,6 +16,7 @@ type ChatMessage = {
 };
 
 type DocumentItem = {
+  id?: string;
   filename?: string;
   name?: string;
 };
