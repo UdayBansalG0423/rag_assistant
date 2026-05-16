@@ -32,6 +32,23 @@ type DocumentRecord = {
   created_at?: string | null;
 };
 
+type ChatSessionRecord = {
+  id: string;
+  user_id: string;
+  title: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+type ChatMessageRecord = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  sources?: string[];
+  latency?: number | null;
+  timestamp?: string | null;
+};
+
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers || {});
   const token = getStoredToken();
@@ -132,4 +149,44 @@ export async function askQuery(
 export async function getDocuments(): Promise<{ documents: DocumentRecord[] }> {
   const headers = await getAuthHeaders();
   return request('/documents', { headers });
+}
+
+export async function createChatSession(): Promise<ChatSessionRecord> {
+  const headers = await getAuthHeaders();
+  return request('/chat/session', {
+    method: 'POST',
+    headers,
+  });
+}
+
+export async function getChatSessions(): Promise<{ sessions: ChatSessionRecord[] }> {
+  const headers = await getAuthHeaders();
+  return request('/chat/sessions', { headers });
+}
+
+export async function saveChatMessage(payload: {
+  session_id: string;
+  user_query: string;
+  assistant_response: string;
+  sources?: string[];
+  latency?: number;
+  title?: string;
+}): Promise<{ id: string; session_id: string; user_id: string }> {
+  const headers = await getAuthHeaders();
+  return request('/chat/message', {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getChatHistory(sessionId: string): Promise<{
+  session: ChatSessionRecord;
+  messages: ChatMessageRecord[];
+}> {
+  const headers = await getAuthHeaders();
+  return request(`/chat/${sessionId}`, { headers });
 }

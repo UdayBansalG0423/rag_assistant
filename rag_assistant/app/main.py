@@ -3,6 +3,7 @@ from fastapi import FastAPI, Depends
 from app.services.rag_service import RAGService
 from app.schemas.response import AskResponse
 from app.routes.documents import router as documents_router
+from app.routes.chat import router as chat_router
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.services.auth_service import get_current_user_from_credentials
@@ -19,6 +20,7 @@ app = FastAPI(title="NeuralDoc RAG API")
 # Include auth routes (routes already prefixed with /auth/)
 app.include_router(auth_router)
 app.include_router(documents_router)
+app.include_router(chat_router)
 
 rag_service = RAGService()
 

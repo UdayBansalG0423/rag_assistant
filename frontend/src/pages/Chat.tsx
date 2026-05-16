@@ -1,10 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Clock, FileText, Loader2, MessageSquare, Sparkles, Send, Upload } from "lucide-react";
+import { Clock, FileText, Loader2, MessageSquare, Plus, Sparkles, Send, Upload } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { askQuery, getDocuments, uploadPdf } from "@/lib/api";
+import {
+  askQuery,
+  createChatSession,
+  getChatHistory,
+  getChatSessions,
+  getDocuments,
+  saveChatMessage,
+  uploadPdf,
+} from "@/lib/api";
 
 type ChatMessage = {
   id: string;
@@ -21,43 +29,24 @@ type DocumentItem = {
   name?: string;
 };
 
-const RECENT_CHATS_KEY = "rag_recent_chats";
-
-function buildRecentChats(messages: ChatMessage[]) {
-  const pairs: Array<{ question: string; answer: string; timestamp: string }> = [];
-  let pendingQuestion: ChatMessage | null = null;
-
-  messages.forEach((message) => {
-    if (message.role === "user") {
-      pendingQuestion = message;
-      return;
-    }
-
-    if (pendingQuestion) {
-      pairs.push({
-        question: pendingQuestion.content,
-        answer: message.content,
-        timestamp: message.timestamp,
-      });
-      pendingQuestion = null;
-    }
-  });
-
-  return pairs.slice(-5);
-}
-
-function persistRecentChats(messages: ChatMessage[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(RECENT_CHATS_KEY, JSON.stringify(buildRecentChats(messages)));
-}
+type ChatSessionItem = {
+  id: string;
+  title: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
 
 export default function Chat() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [sessions, setSessions] = useState<ChatSessionItem[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [query, setQuery] = useState("");
   const [sending, setSending] = useState(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -75,13 +64,60 @@ export default function Chat() {
     }
   };
 
+  const fetchSessions = async (preferLatest = false) => {
+    setLoadingSessions(true);
+    try {
+      const data = await getChatSessions();
+      const nextSessions = (data.sessions ?? []) as ChatSessionItem[];
+      setSessions(nextSessions);
+
+      if (preferLatest && nextSessions.length > 0) {
+        const latest = nextSessions[0];
+        setActiveSessionId(latest.id);
+        await loadSessionHistory(latest.id);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to load chats");
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  const loadSessionHistory = async (sessionId: string) => {
+    setLoadingHistory(true);
+    try {
+      const history = await getChatHistory(sessionId);
+      setActiveSessionId(sessionId);
+      setMessages(history.messages ?? []);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to load chat history");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const startNewChat = async () => {
+    setLoadingHistory(true);
+    try {
+      const session = await createChatSession();
+      setSessions((current) => [session, ...current.filter((item) => item.id !== session.id)]);
+      setActiveSessionId(session.id);
+      setMessages([]);
+      setQuery("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to start a new chat");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   useEffect(() => {
     fetchDocuments();
+    fetchSessions(true);
   }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    persistRecentChats(messages);
   }, [messages]);
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,6 +141,19 @@ export default function Chat() {
     const trimmed = query.trim();
     if (!trimmed || sending) return;
 
+    let sessionId = activeSessionId;
+    if (!sessionId) {
+      try {
+        const session = await createChatSession();
+        sessionId = session.id;
+        setSessions((current) => [session, ...current.filter((item) => item.id !== session.id)]);
+        setActiveSessionId(sessionId);
+      } catch (error: any) {
+        toast.error(error.message || "Failed to create chat session");
+        return;
+      }
+    }
+
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
@@ -118,6 +167,15 @@ export default function Chat() {
 
     try {
       const result = await askQuery(trimmed);
+      await saveChatMessage({
+        session_id: sessionId,
+        user_query: trimmed,
+        assistant_response: result.answer,
+        sources: result.sources,
+        latency: result.latency,
+        title: trimmed,
+      });
+      await fetchSessions();
       setMessages((current) => [
         ...current,
         {
@@ -203,12 +261,60 @@ export default function Chat() {
               Keep questions short and specific for better retrieval. The assistant will surface document sources and latency after each reply.
             </p>
           </div>
+
+          <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-black/20 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-white/35">Recent chats</p>
+                <h3 className="mt-2 text-base font-semibold text-white">Your conversations</h3>
+              </div>
+              <Button
+                variant="outline"
+                className="gap-2 border-white/10 bg-white/5 text-white/75 hover:bg-white/10"
+                onClick={startNewChat}
+              >
+                <Plus className="h-4 w-4" />
+                New
+              </Button>
+            </div>
+
+            <div className="mt-4 space-y-2 max-h-[320px] overflow-y-auto pr-1">
+              {loadingSessions ? (
+                <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-4 text-sm text-white/45">
+                  Loading chats...
+                </div>
+              ) : sessions.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-4 text-sm text-white/45">
+                  No chat sessions yet.
+                </div>
+              ) : (
+                sessions.map((session) => (
+                  <button
+                    key={session.id}
+                    onClick={() => loadSessionHistory(session.id)}
+                    className={`w-full rounded-2xl border px-4 py-3 text-left transition ${activeSessionId === session.id ? "border-blue-400/30 bg-blue-500/10" : "border-white/10 bg-white/5 hover:bg-white/10"}`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="truncate text-sm font-medium text-white">{session.title || "New chat"}</p>
+                      {activeSessionId === session.id ? <span className="text-[10px] uppercase tracking-[0.18em] text-blue-200">Open</span> : null}
+                    </div>
+                    <p className="mt-1 text-xs text-white/35">
+                      {session.updated_at ? new Date(session.updated_at).toLocaleString() : "Recently updated"}
+                    </p>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
         </section>
 
         <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] backdrop-blur overflow-hidden flex flex-col min-h-[72vh]">
           <div className="border-b border-white/10 px-6 py-5">
             <p className="text-xs uppercase tracking-[0.22em] text-white/35">Conversation</p>
-            <h3 className="mt-2 text-lg font-semibold text-white">Talk to docs</h3>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <h3 className="text-lg font-semibold text-white">{sessions.find((session) => session.id === activeSessionId)?.title || "Talk to docs"}</h3>
+              {loadingHistory ? <span className="text-xs text-white/35">Loading history...</span> : null}
+            </div>
           </div>
 
           <div className="flex-1 px-6 py-6 overflow-y-auto space-y-4">
