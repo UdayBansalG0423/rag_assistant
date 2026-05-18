@@ -15,6 +15,7 @@ from app.services.llm import generate_response
 load_dotenv()
 
 SIMILARITY_THRESHOLD = 5.0
+CHECKPOINT_INTERVAL = 100
 
 
 class RAGService:
@@ -43,22 +44,146 @@ class RAGService:
                 print("No existing vector store found.")
 
     def index_pdf(self, path: str, user_id: str = None, document_id: str = None):
+        doc_id = document_id or os.path.basename(path)
+
+        # progress/checkpoint files
+        base_progress_dir = os.getenv("RAG_PROGRESS_DIR", "vector_store_progress")
+        user_dir = user_id or "public"
+        os.makedirs(os.path.join(base_progress_dir, user_dir), exist_ok=True)
+        progress_path = os.path.join(base_progress_dir, user_dir, f"{doc_id}.json")
+
+        def write_progress(state: dict):
+            try:
+                import json
+
+                with open(progress_path, "w", encoding="utf-8") as pf:
+                    json.dump(state, pf)
+            except Exception as pf_exc:
+                logger.warning("Failed to write progress file: %s", pf_exc)
+
+        write_progress({
+            "last_processed_chunk": 0,
+            "last_index": 0,
+            "total": 0,
+            "progress": 0.0,
+            "status": "extracting_pages",
+        })
+
         text = extract_pdf_text(path)
+        write_progress({
+            "last_processed_chunk": 0,
+            "last_index": 0,
+            "total": 0,
+            "progress": 0.0,
+            "status": "chunking",
+        })
+
         chunks = chunk_text(text, 500)
         clean = clean_chunks(chunks)
 
         if not clean:
             logger.warning(f"No clean chunks extracted from {path}")
+            write_progress({
+                "last_processed_chunk": 0,
+                "last_index": 0,
+                "total": 0,
+                "progress": 0.0,
+                "status": "failed",
+                "error": "No clean chunks extracted",
+            })
             return
 
-        embeddings = self.embedding_provider.embed(clean)
-        doc_id = document_id or os.path.basename(path)
+        total = len(clean)
+        start_index = 0
+        # resume if checkpoint exists
+        if os.path.exists(progress_path):
+            try:
+                import json
 
-        if self.vector_provider == "pinecone":
-            self.vector_store.add_embeddings(embeddings, clean, doc_id, user_id=user_id)
-        else:
-            self.vector_store.add_embeddings(embeddings, clean, user_id=user_id)
-            self.vector_store.save(f"vector_store/{user_id}" if user_id else "vector_store")
+                with open(progress_path, "r", encoding="utf-8") as pf:
+                    state = json.load(pf)
+                    last_processed_chunk = int(state.get("last_processed_chunk", state.get("last_index", 0) - 1))
+                    start_index = min(total, last_processed_chunk + 1)
+            except Exception:
+                start_index = 0
+
+        batch_size = int(os.getenv("EMBED_BATCH_SIZE", "32"))
+        last_processed_chunk = start_index - 1
+
+        try:
+            write_progress({
+                "last_processed_chunk": max(-1, last_processed_chunk),
+                "last_index": max(0, start_index),
+                "total": total,
+                "progress": round((start_index / total) * 100, 2) if total else 0.0,
+                "status": "embedding",
+            })
+
+            for i in range(start_index, total, batch_size):
+                batch_texts = clean[i : i + batch_size]
+
+                if not batch_texts:
+                    continue
+
+                # embed batch (provider handles batching/fallbacks)
+                embeddings = self.embedding_provider.embed(batch_texts)
+
+                # protect against mismatched lengths
+                if len(embeddings) != len(batch_texts):
+                    logger.warning(
+                        "Embedding count mismatch: expected=%d got=%d; truncating",
+                        len(batch_texts),
+                        len(embeddings),
+                    )
+                    min_len = min(len(embeddings), len(batch_texts))
+                    embeddings = embeddings[:min_len]
+                    batch_texts = batch_texts[:min_len]
+
+                # add to vector store
+                if self.vector_provider == "pinecone":
+                    self.vector_store.add_embeddings(embeddings, batch_texts, doc_id, user_id=user_id)
+                else:
+                    self.vector_store.add_embeddings(embeddings, batch_texts, user_id=user_id)
+
+                last_processed_chunk = i + len(batch_texts) - 1
+                processed_count = last_processed_chunk + 1
+                percent = round((processed_count / total) * 100, 2)
+                status = "embedding" if processed_count < total else "indexing"
+
+                if processed_count % CHECKPOINT_INTERVAL == 0 or processed_count >= total:
+                    write_progress({
+                        "last_processed_chunk": last_processed_chunk,
+                        "last_index": processed_count,
+                        "total": total,
+                        "progress": percent,
+                        "status": status,
+                    })
+
+            # final save for non-pinecone stores
+            if self.vector_provider != "pinecone":
+                self.vector_store.save(f"vector_store/{user_id}" if user_id else "vector_store")
+
+            # mark done
+            write_progress({
+                "last_processed_chunk": total - 1,
+                "last_index": total,
+                "total": total,
+                "progress": 100.0,
+                "status": "done",
+            })
+
+        except Exception as exc:
+            logger.exception("Indexing failed for %s: %s", doc_id, exc)
+            failed_count = last_processed_chunk + 1 if "last_processed_chunk" in locals() else start_index
+            write_progress({
+                "last_processed_chunk": max(0, failed_count - 1),
+                "last_index": max(0, failed_count),
+                "total": total,
+                "progress": round((failed_count / total) * 100, 2) if total else 0.0,
+                "status": "failed",
+                "error": str(exc),
+            })
+            raise
 
     def retrieve(self, query: str, user_id: str = None):
         query_embedding = self.embedding_provider.embed([query])[0]

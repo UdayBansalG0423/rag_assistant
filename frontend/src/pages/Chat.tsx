@@ -91,6 +91,7 @@ export default function Chat() {
         (history.messages ?? []).map((message) => ({
           ...message,
           latency: message.latency ?? undefined,
+          timestamp: message.timestamp ?? new Date().toISOString(),
         })),
       );
     } catch (error: any) {

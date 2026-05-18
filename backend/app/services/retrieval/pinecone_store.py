@@ -1,7 +1,43 @@
 import os
 import uuid
+import re
 
 from pinecone import Pinecone
+
+
+import unicodedata
+
+
+def _safe_text(value: object, max_len: int = 2000) -> str:
+    """Coerce to str, remove control characters and surrogate codepoints,
+    normalize, and truncate to `max_len`.
+    """
+    if value is None:
+        return ""
+
+    if not isinstance(value, str):
+        value = str(value)
+
+    # Normalize to NFC
+    try:
+        value = unicodedata.normalize("NFC", value)
+    except Exception:
+        pass
+
+    # Filter out control chars and surrogate codepoints
+    cleaned_chars = []
+    for ch in value:
+        cp = ord(ch)
+        # drop C0/C1 controls, non-characters, and UTF-16 surrogate halves
+        if cp <= 0x1F or (0x7F <= cp <= 0x9F) or cp in (0xFFFE, 0xFFFF) or (0xD800 <= cp <= 0xDFFF):
+            continue
+        cleaned_chars.append(ch)
+
+    cleaned = "".join(cleaned_chars)
+
+    if len(cleaned) > max_len:
+        return cleaned[:max_len]
+    return cleaned
 
 
 class PineconeVectorStore:
@@ -21,10 +57,10 @@ class PineconeVectorStore:
                 "id": str(uuid.uuid4()),
                 "values": embedding,
                 "metadata": {
-                    "chunk": text,
-                    "doc_id": doc_id,
-                    "user_id": user_id,
-                    "document_id": doc_id,
+                    "chunk": _safe_text(text),
+                    "doc_id": _safe_text(doc_id),
+                    "user_id": _safe_text(user_id),
+                    "document_id": _safe_text(doc_id),
                     "chunk_index": chunk_index,
                 }
             })
@@ -73,8 +109,8 @@ class PineconeVectorStore:
         for match in results["matches"]:
             metadata = match.get("metadata") or {}
             formatted.append({
-                "chunk": metadata.get("chunk", ""),
-                "doc_id": metadata.get("doc_id") or metadata.get("document_id"),
+                "chunk": _safe_text(metadata.get("chunk", "")),
+                "doc_id": _safe_text(metadata.get("doc_id") or metadata.get("document_id")),
                 "score": match["score"],
             })
 

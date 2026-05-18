@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 import tempfile
 import uuid
+import threading
 
 from fastapi import HTTPException, UploadFile
 from supabase import create_client
@@ -44,20 +45,22 @@ class DocumentService:
 
         supabase_admin.table("documents").insert(record).execute()
 
-        temp_path = None
-        try:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
-                temp_file.write(file_bytes)
-                temp_path = temp_file.name
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+            temp_file.write(file_bytes)
+            temp_path = temp_file.name
 
-            rag_service = RAGService()
-            rag_service.index_pdf(temp_path, user_id=user_id, document_id=document_id)
+        def run_indexing():
+            try:
+                rag_service = RAGService()
+                rag_service.index_pdf(temp_path, user_id=user_id, document_id=document_id)
+                supabase_admin.table("documents").update({"status": "completed"}).eq("id", document_id).eq("user_id", user_id).execute()
+            except Exception as exc:
+                supabase_admin.table("documents").update({"status": "failed", "error": str(exc)}).eq("id", document_id).eq("user_id", user_id).execute()
+            finally:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
 
-            supabase_admin.table("documents").update({"status": "completed"}).eq("id", document_id).eq("user_id", user_id).execute()
-            record["status"] = "completed"
-        finally:
-            if temp_path and os.path.exists(temp_path):
-                os.remove(temp_path)
+        threading.Thread(target=run_indexing, daemon=True).start()
 
         return {**record, "message": "File uploaded successfully"}
 
