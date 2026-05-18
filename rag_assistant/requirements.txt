@@ -9,3 +9,5 @@ python-dotenv
 multipart
 python-jose[cryptography]
 passlib[bcrypt]
+supabase>=2.0.0
+pydantic[email]

@@ -11,8 +11,24 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
+      '/auth': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/upload': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/documents': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/ask': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/chat': {
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
     },

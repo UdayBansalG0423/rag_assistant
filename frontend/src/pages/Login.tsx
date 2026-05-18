@@ -6,7 +6,7 @@ import { Logo } from "@/components/Logo";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +18,7 @@ export default function Login() {
     setLoading(true);
     setError(null);
     try {
-      await login(username.trim(), password);
+      await login(email.trim(), password);
       navigate("/dashboard");
     } catch (err: any) {
       setError(err.message || "Unable to sign in");
@@ -38,20 +38,20 @@ export default function Login() {
           </div>
 
           <h2 className="text-[26px] font-bold text-white mb-2 tracking-tight">Welcome back</h2>
-          <p className="text-sm text-slate-500 mb-8 font-medium">Sign in with your backend username to access the workspace.</p>
+          <p className="text-sm text-slate-500 mb-8 font-medium">Sign in with your email to access your workspace.</p>
 
           <form className="space-y-4" onSubmit={handleEmailLogin}>
             {error && <div className="text-red-400 text-sm">{error}</div>}
             
             <div>
-              <label className="block text-[13px] font-medium text-slate-400 mb-2">Username</label>
+              <label className="block text-[13px] font-medium text-slate-400 mb-2">Email</label>
               <Input
-                type="text"
+                type="email"
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="bg-white/[0.04] border-white/[0.08] text-white rounded-[8px] focus-visible:ring-1 focus-visible:ring-white/20 h-11 shadow-none"
-                placeholder="your-username"
+                placeholder="you@example.com"
               />
             </div>
 

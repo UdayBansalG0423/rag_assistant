@@ -5,6 +5,7 @@ import requests
 class EmbeddingProvider:
     def __init__(self):
         self.provider = os.getenv("EMBEDDING_PROVIDER", "local")
+        self.model = None
 
         if self.provider == "huggingface":
             self.api_key = os.getenv("HF_API_KEY")
@@ -15,9 +16,13 @@ class EmbeddingProvider:
                 "https://router.huggingface.co/hf-inference/"
                 "models/sentence-transformers/all-MiniLM-L6-v2"
             )
-        else:
+
+    def _get_local_model(self):
+        if self.model is None:
             from sentence_transformers import SentenceTransformer
+
             self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        return self.model
 
     def embed(self, texts):
         if self.provider == "huggingface":
@@ -51,4 +56,4 @@ class EmbeddingProvider:
             return embeddings
 
         elif self.provider == "local":
-            return self.model.encode(texts).tolist()
+            return self._get_local_model().encode(texts).tolist()

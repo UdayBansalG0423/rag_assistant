@@ -6,6 +6,8 @@ import {
   decodeAuthToken,
   getStoredToken,
   setStoredToken,
+  setStoredRefreshToken,
+  setStoredUserId,
 } from "@/lib/auth";
 
 interface AuthContextType {
@@ -13,8 +15,8 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  register: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -45,15 +47,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (username: string, password: string) => {
-    const response = await loginUser({ username, password });
+  const login = async (email: string, password: string) => {
+    const response = await loginUser({ email, password });
+    
+    // Store Supabase tokens
     setStoredToken(response.access_token);
+    setStoredRefreshToken(response.refresh_token);
+    setStoredUserId(response.user_id);
+    
     setToken(response.access_token);
-    setUser(decodeAuthToken(response.access_token));
+    const decodedUser = decodeAuthToken(response.access_token);
+    if (decodedUser) {
+      setUser(decodedUser);
+    }
   };
 
-  const register = async (username: string, password: string) => {
-    await registerUser({ username, password });
+  const register = async (name: string, email: string, password: string) => {
+    await registerUser({ name, email, password });
+    // After signup, user should login
   };
 
   const signOut = async () => {

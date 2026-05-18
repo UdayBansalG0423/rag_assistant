@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, BookOpen, Clock3, Upload, MessageSquare, Sparkles, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { getDocuments, getStatus } from "@/lib/api";
+import { getDocuments } from "@/lib/api";
 
 type DocumentItem = {
   filename?: string;
@@ -52,9 +52,9 @@ export default function Dashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [docs, status] = await Promise.all([getDocuments(), getStatus()]);
+      const docs = await getDocuments();
       setDocuments((docs.documents ?? []) as DocumentItem[]);
-      setDocumentsIndexed(!!status.documents_indexed);
+      setDocumentsIndexed((docs.documents ?? []).length > 0);
       setRecentChats(loadRecentChats());
     } finally {
       setLoading(false);

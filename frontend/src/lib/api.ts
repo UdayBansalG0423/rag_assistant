@@ -1,13 +1,52 @@
-import { clearStoredToken, getStoredToken } from "./auth";
+import {
+  clearStoredToken,
+  getStoredToken,
+  setStoredRefreshToken,
+  setStoredUserId,
+} from "./auth";
 
-type Credentials = {
-  username: string;
+type SignUpCredentials = {
+  name: string;
+  email: string;
+  password: string;
+};
+
+type LoginCredentials = {
+  email: string;
   password: string;
 };
 
 type AuthResponse = {
   access_token: string;
+  refresh_token: string;
+  user_id: string;
+  email: string;
   token_type: string;
+};
+
+type DocumentRecord = {
+  id: string;
+  user_id: string;
+  filename: string;
+  storage_path: string;
+  created_at?: string | null;
+};
+
+type ChatSessionRecord = {
+  id: string;
+  user_id: string;
+  title: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+type ChatMessageRecord = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  sources?: string[];
+  latency?: number | null;
+  timestamp?: string | null;
 };
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
@@ -45,8 +84,10 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   return { Authorization: `Bearer ${token}` };
 }
 
-export async function registerUser(credentials: Credentials): Promise<{ message: string }> {
-  return request("/api/register", {
+export async function registerUser(
+  credentials: SignUpCredentials,
+): Promise<{ message: string; user_id: string; email: string }> {
+  return request("/auth/signup", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -55,8 +96,10 @@ export async function registerUser(credentials: Credentials): Promise<{ message:
   });
 }
 
-export async function loginUser(credentials: Credentials): Promise<AuthResponse> {
-  return request("/api/login", {
+export async function loginUser(
+  credentials: LoginCredentials,
+): Promise<AuthResponse> {
+  return request("/auth/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -70,12 +113,12 @@ export async function loginUser(credentials: Credentials): Promise<AuthResponse>
 /** Upload a PDF file to the backend for indexing. */
 export async function uploadPdf(
   file: File,
-): Promise<{ status: string; filename: string }> {
+): Promise<{ message: string; filename: string; id: string; user_id: string; storage_path: string }> {
   const headers = await getAuthHeaders();
   const form = new FormData();
   form.append('file', file);
 
-  return request('/api/upload', {
+  return request('/upload', {
     method: 'POST',
     headers,          // Content-Type is set automatically by the browser for FormData
     body: form,
@@ -87,7 +130,7 @@ export async function askQuery(
   query: string,
 ): Promise<{ answer: string; sources: string[]; latency: number }> {
   const headers = await getAuthHeaders();
-  const result = await request<{ answer?: string; sources?: string[]; latency?: number } | string>(`/api/ask?q=${encodeURIComponent(query)}`, {
+  const result = await request<{ answer?: string; sources?: string[]; latency?: number } | string>(`/ask?q=${encodeURIComponent(query)}`, {
     headers,
   });
 
@@ -103,13 +146,47 @@ export async function askQuery(
 }
 
 /** Retrieve the list of indexed documents. */
-export async function getDocuments(): Promise<{ documents: any[] }> {
+export async function getDocuments(): Promise<{ documents: DocumentRecord[] }> {
   const headers = await getAuthHeaders();
-  return request('/api/documents', { headers });
+  return request('/documents', { headers });
 }
 
-/** Check whether any documents have been indexed. */
-export async function getStatus(): Promise<{ documents_indexed: boolean }> {
+export async function createChatSession(): Promise<ChatSessionRecord> {
   const headers = await getAuthHeaders();
-  return request('/api/status', { headers });
+  return request('/chat/session', {
+    method: 'POST',
+    headers,
+  });
+}
+
+export async function getChatSessions(): Promise<{ sessions: ChatSessionRecord[] }> {
+  const headers = await getAuthHeaders();
+  return request('/chat/sessions', { headers });
+}
+
+export async function saveChatMessage(payload: {
+  session_id: string;
+  user_query: string;
+  assistant_response: string;
+  sources?: string[];
+  latency?: number;
+  title?: string;
+}): Promise<{ id: string; session_id: string; user_id: string }> {
+  const headers = await getAuthHeaders();
+  return request('/chat/message', {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getChatHistory(sessionId: string): Promise<{
+  session: ChatSessionRecord;
+  messages: ChatMessageRecord[];
+}> {
+  const headers = await getAuthHeaders();
+  return request(`/chat/${sessionId}`, { headers });
 }

@@ -3,9 +3,10 @@ import { toast } from "sonner";
 import { FileText, Loader2, RefreshCw, Upload, DatabaseZap, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { getDocuments, getStatus, uploadPdf } from "@/lib/api";
+import { getDocuments, uploadPdf } from "@/lib/api";
 
 type DocumentItem = {
+  id?: string;
   filename?: string;
   name?: string;
 };
@@ -13,7 +14,6 @@ type DocumentItem = {
 export default function KnowledgeBase() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [indexed, setIndexed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState("");
@@ -21,9 +21,8 @@ export default function KnowledgeBase() {
   const loadDocuments = async () => {
     setLoading(true);
     try {
-      const [docs, status] = await Promise.all([getDocuments(), getStatus()]);
+      const docs = await getDocuments();
       setDocuments((docs.documents ?? []) as DocumentItem[]);
-      setIndexed(!!status.documents_indexed);
     } catch (error: any) {
       toast.error(error.message || "Failed to load documents");
     } finally {
@@ -106,7 +105,7 @@ export default function KnowledgeBase() {
               <p className="text-xs uppercase tracking-[0.2em] text-white/35">Indexed status</p>
               <div className="mt-2 flex items-center gap-2 text-white">
                 <DatabaseZap className="h-4 w-4 text-blue-300" />
-                <span>{indexed ? "Active" : "Waiting for documents"}</span>
+                <span>{documents.length > 0 ? "Active" : "Waiting for documents"}</span>
               </div>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">

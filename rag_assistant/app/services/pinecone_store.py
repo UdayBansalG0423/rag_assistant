@@ -10,10 +10,10 @@ class PineconeVectorStore:
         self.index = self.pc.Index(self.index_name)
         self.dim = dim
 
-    def add_embeddings(self, embeddings, texts, doc_id):
+    def add_embeddings(self, embeddings, texts, doc_id, user_id: str = None):
         vectors = []
 
-        for embedding, text in zip(embeddings, texts):
+        for chunk_index, (embedding, text) in enumerate(zip(embeddings, texts)):
             if hasattr(embedding, "tolist"):
                 embedding = embedding.tolist()
             vectors.append({
@@ -21,41 +21,63 @@ class PineconeVectorStore:
                 "values": embedding,
                 "metadata": {
                     "chunk": text,
-                    "doc_id": doc_id
+                    "doc_id": doc_id,
+                    "user_id": user_id,
+                    "document_id": doc_id,
+                    "chunk_index": chunk_index,
                 }
             })
 
-        self.index.upsert(vectors=vectors)
+        # Use namespace (Supabase user_id) when available to isolate tenants
+        if user_id:
+            self.index.upsert(vectors=vectors, namespace=user_id)
+        else:
+            self.index.upsert(vectors=vectors)
 
-    def get_documents(self):
+    def get_documents(self, namespace: str = None):
         """Return distinct doc_ids stored in Pinecone via list + fetch."""
         doc_ids = set()
         try:
-            for id_batch in self.index.list():
-                fetch_result = self.index.fetch(ids=id_batch)
-                for vec in fetch_result.vectors.values():
-                    if vec.metadata and "doc_id" in vec.metadata:
-                        doc_ids.add(vec.metadata["doc_id"])
+            # If namespace provided, list only in that namespace
+            if namespace:
+                for id_batch in self.index.list(namespace=namespace):
+                    fetch_result = self.index.fetch(ids=id_batch, namespace=namespace)
+                    for vec in fetch_result.vectors.values():
+                        if vec.metadata and "doc_id" in vec.metadata:
+                            doc_ids.add(vec.metadata["doc_id"])
+            else:
+                for id_batch in self.index.list():
+                    fetch_result = self.index.fetch(ids=id_batch)
+                    for vec in fetch_result.vectors.values():
+                        if vec.metadata and "doc_id" in vec.metadata:
+                            doc_ids.add(vec.metadata["doc_id"])
         except Exception:
             pass
         return list(doc_ids)
 
-    def search(self, query_embedding, k=3):
+    def search(self, query_embedding, k=3, user_id: str = None):
         if hasattr(query_embedding, "tolist"):
             query_embedding = query_embedding.tolist()
 
-        results = self.index.query(
-            vector=query_embedding,
-            top_k=k,
-            include_metadata=True
-        )
+        query_kwargs = {
+            "vector": query_embedding,
+            "top_k": k,
+            "include_metadata": True,
+        }
+
+        if user_id:
+            query_kwargs["namespace"] = user_id
+            query_kwargs["filter"] = {"user_id": user_id}
+
+        results = self.index.query(**query_kwargs)
 
         formatted = []
         for match in results["matches"]:
+            metadata = match.get("metadata") or {}
             formatted.append({
-                "chunk": match["metadata"]["chunk"],
-                "doc_id": match["metadata"]["doc_id"],
-                "score": match["score"]
+                "chunk": metadata.get("chunk", ""),
+                "doc_id": metadata.get("doc_id") or metadata.get("document_id"),
+                "score": match["score"],
             })
 
         return formatted

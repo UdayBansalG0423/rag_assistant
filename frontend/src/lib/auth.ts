@@ -1,7 +1,11 @@
 const AUTH_TOKEN_KEY = "rag_auth_token";
+const REFRESH_TOKEN_KEY = "rag_refresh_token";
+const USER_ID_KEY = "rag_user_id";
 
 export interface AuthUser {
-  username: string;
+  id: string;
+  email: string;
+  name?: string;
 }
 
 export function getStoredToken(): string | null {
@@ -14,9 +18,31 @@ export function setStoredToken(token: string) {
   window.localStorage.setItem(AUTH_TOKEN_KEY, token);
 }
 
+export function getStoredRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function setStoredRefreshToken(token: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(REFRESH_TOKEN_KEY, token);
+}
+
+export function getStoredUserId(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(USER_ID_KEY);
+}
+
+export function setStoredUserId(userId: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(USER_ID_KEY, userId);
+}
+
 export function clearStoredToken() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(AUTH_TOKEN_KEY);
+  window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+  window.localStorage.removeItem(USER_ID_KEY);
 }
 
 function base64UrlDecode(value: string) {
@@ -30,10 +56,24 @@ export function decodeAuthToken(token: string): AuthUser | null {
     const payload = token.split(".")[1];
     if (!payload) return null;
 
-    const decoded = JSON.parse(base64UrlDecode(payload)) as { sub?: string };
-    if (!decoded.sub) return null;
+    const decoded = JSON.parse(base64UrlDecode(payload)) as {
+      sub?: string;
+      email?: string;
+      user_metadata?: { name?: string };
+    };
+    
+    // Supabase JWT uses 'sub' for user ID
+    const userId = decoded.sub;
+    const email = decoded.email;
+    const name = decoded.user_metadata?.name;
+    
+    if (!userId || !email) return null;
 
-    return { username: decoded.sub };
+    return {
+      id: userId,
+      email,
+      name,
+    };
   } catch {
     return null;
   }

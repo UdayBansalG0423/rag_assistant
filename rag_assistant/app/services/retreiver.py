@@ -7,17 +7,43 @@ class VectorStore:
         import faiss
 
         self.faiss = faiss
-        self.index = faiss.IndexFlatL2(dim)
+        self.index = None
         self.text_chunks = []
+        self.dim = dim
 
-    def add_embeddings(self, embeddings, texts):
+    def add_embeddings(self, embeddings, texts, user_id: str = None):
+        # For per-user isolation, store/load per-user index files under vector_store/{user_id}
+        if user_id:
+            path = f"vector_store/{user_id}"
+            try:
+                self.load(path)
+            except Exception:
+                # initialize new index for this user
+                self.index = self.faiss.IndexFlatL2(self.dim)
+                self.text_chunks = []
+        else:
+            if self.index is None:
+                self.index = self.faiss.IndexFlatL2(self.dim)
+
         self.index.add(np.array(embeddings))
         self.text_chunks.extend(texts)
 
-    def search(self, query_embedding, k=3):
-        distances, indices = self.index.search(
-            np.array([query_embedding]), k
-        )
+        if user_id:
+            self.save(path)
+
+    def search(self, query_embedding, k=3, user_id: str = None):
+        # If user_id provided, load that user's index
+        if user_id:
+            path = f"vector_store/{user_id}"
+            try:
+                self.load(path)
+            except Exception:
+                return []
+
+        if self.index is None:
+            return []
+
+        distances, indices = self.index.search(np.array([query_embedding]), k)
 
         results = []
         for idx, dist in zip(indices[0], distances[0]):

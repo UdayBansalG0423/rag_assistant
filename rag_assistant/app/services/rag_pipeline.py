@@ -5,6 +5,7 @@ from app.services.llm import generate_response
 from app.core.logger import logger
 import time
 import mlflow
+import re
 
 mlflow.set_experiment("RAG-Observability")
 
@@ -13,6 +14,25 @@ SIMILARITY_THRESHOLD = 5.0  # adjust after testing
 
 embedding_model = EmbeddingModel()
 vector_store = None
+
+
+def _clean_chunks(chunks):
+    clean_chunks = []
+
+    for chunk in chunks:
+        if hasattr(chunk, "page_content"):
+            chunk = chunk.page_content
+
+        if not isinstance(chunk, str):
+            continue
+
+        chunk = re.sub(r'[\x00-\x1F\x7F-\x9F\uFFFE\uFFFF]', '', chunk)
+        chunk = chunk.strip()
+
+        if chunk:
+            clean_chunks.append(chunk)
+
+    return clean_chunks
 
 def load_pdf_and_index(path: str):
     global vector_store
@@ -24,11 +44,12 @@ def load_pdf_and_index(path: str):
         text += page.extract_text()
 
     chunks = [text[i:i+500] for i in range(0, len(text), 500)]
+    clean_chunks = _clean_chunks(chunks)
 
-    embeddings = embedding_model.encode(chunks)
+    embeddings = embedding_model.encode(clean_chunks)
 
     vector_store = VectorStore(len(embeddings[0]))
-    vector_store.add_embeddings(embeddings, chunks)
+    vector_store.add_embeddings(embeddings, clean_chunks)
 
 def retrieve(query: str):
     if vector_store is None:
