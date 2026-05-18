@@ -13,3 +13,4 @@ backend/rag_assistant.db
 __pycache__/
 *.pyc
 backend/vector_store_progress/
+vector_store_progress/
