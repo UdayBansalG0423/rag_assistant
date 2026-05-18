@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Settings as SettingsIcon, SlidersHorizontal, Braces, Database, Cpu, Save } from "lucide-react";
 import { toast } from "sonner";
-import { AppShell } from "@/components/AppShell";
+import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 
 const STORAGE_KEY = "rag_frontend_settings";

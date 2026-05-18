@@ -6,6 +6,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name?: string;
+  username?: string;
 }
 
 export function getStoredToken(): string | null {
@@ -73,6 +74,7 @@ export function decodeAuthToken(token: string): AuthUser | null {
       id: userId,
       email,
       name,
+      username: name ?? email.split("@")[0],
     };
   } catch {
     return null;

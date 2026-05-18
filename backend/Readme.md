@@ -1,6 +1,6 @@
 # NeuralDoc AI — Production-Ready RAG SaaS Platform
 
-🚀 Live Demo: [https://rag-assistant-2-rqep.onrender.com]  
+🚀 Live Demo: [Your Deployment Link Here]  
 🐳 Dockerized | 🔐 JWT Secured | ☁ Pinecone Integrated | 🤖 Multi-LLM Support  
 
 ---
@@ -44,7 +44,7 @@ NeuralDoc AI solves these problems by providing a modular, secure, scalable RAG 
 
 ## 🏗 System Architecture
 
-![Architecture Diagram](docs/architecture/architecturaldiagram.png)
+![Architecture Diagram](../docs/architecture/architecturaldiagram.png)
 
 Key Design Decisions:
 
@@ -153,13 +153,13 @@ This separation ensures development flexibility and production scalability.
 ### 📄 Upload Document
 Drop a PDF into the Knowledge Base panel and click **Upload & Index**.
 
-![Upload Document](docs/architecture/Load.png)
+![Upload Document](../docs/architecture/Load.png)
 ---
 
 ###  💬 Ask Contextual Questions
 Type your question in the chat input and hit send.
 
-![Ask Question](docs/architecture/ask.png)
+![Ask Question](../docs/architecture/ask.png)
 
 
 ## 🎯 What I Learned

@@ -1,0 +1,14 @@
+frontend/node_modules/
+frontend/dist/
+backend/myvenv/
+.venv/
+backend/.env
+backend/__pycache__/
+backend/*.pyc
+backend/vector_store/
+backend/mlruns/
+backend/mlflow.db
+backend/rag_assistant.db
+.env
+__pycache__/
+*.pyc
