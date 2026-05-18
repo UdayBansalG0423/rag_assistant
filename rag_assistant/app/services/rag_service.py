@@ -6,12 +6,31 @@ from app.core.logger import logger
 import time
 import mlflow
 import os
+import re
 from dotenv import load_dotenv      
 load_dotenv()
 
 SIMILARITY_THRESHOLD = 5.0
 
 class RAGService:
+    @staticmethod
+    def _clean_chunks(chunks):
+        clean_chunks = []
+
+        for chunk in chunks:
+            if hasattr(chunk, "page_content"):
+                chunk = chunk.page_content
+
+            if not isinstance(chunk, str):
+                continue
+
+            chunk = re.sub(r'[\x00-\x1F\x7F-\x9F\uFFFE\uFFFF]', '', chunk)
+            chunk = chunk.strip()
+
+            if chunk:
+                clean_chunks.append(chunk)
+
+        return clean_chunks
 
     def __init__(self):
         self.embedding_provider = EmbeddingProvider()
@@ -46,14 +65,15 @@ class RAGService:
             text += page.extract_text()
 
         chunks = [text[i:i+500] for i in range(0, len(text), 500)]
-        embeddings = self.embedding_provider.embed(chunks)
+        clean_chunks = self._clean_chunks(chunks)
+        embeddings = self.embedding_provider.embed(clean_chunks)
 
         doc_id = document_id or os.path.basename(path)
         # default: no user namespace
         if self.vector_provider == "pinecone":
-            self.vector_store.add_embeddings(embeddings, chunks, doc_id, user_id=user_id)
+            self.vector_store.add_embeddings(embeddings, clean_chunks, doc_id, user_id=user_id)
         else:
-            self.vector_store.add_embeddings(embeddings, chunks, user_id=user_id)
+            self.vector_store.add_embeddings(embeddings, clean_chunks, user_id=user_id)
             self.vector_store.save(f"vector_store/{user_id}" if user_id else "vector_store")
         
 
