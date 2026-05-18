@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { FileText, Loader2, RefreshCw, Upload, DatabaseZap, Trash2 } from "lucide-react";
-import { AppShell } from "@/components/AppShell";
+import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
-import { getDocuments, uploadPdf } from "@/lib/api";
+import UploadProgress from "@/components/UploadProgress";
+import { getDocuments, uploadPdf } from "@/services/document.service";
 
 type DocumentItem = {
   id?: string;
@@ -16,6 +17,7 @@ export default function KnowledgeBase() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const loadDocuments = async () => {
@@ -50,7 +52,8 @@ export default function KnowledgeBase() {
     setUploading(true);
     try {
       const response = await uploadPdf(file);
-      toast.success(`${response.filename} uploaded`);
+      setActiveDocumentId(response.id);
+      toast.success(`${response.filename || file.name} uploaded`);
       await loadDocuments();
     } catch (error: any) {
       toast.error(error.message || "Upload failed");
@@ -113,6 +116,12 @@ export default function KnowledgeBase() {
               <div className="mt-2 text-white">{documents.length} files</div>
             </div>
           </div>
+
+          {activeDocumentId ? (
+            <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-4">
+              <UploadProgress documentId={activeDocumentId} />
+            </div>
+          ) : null}
         </section>
 
         <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur">

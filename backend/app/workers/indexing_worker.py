@@ -1,0 +1,1 @@
+"""Background indexing worker placeholder for future Redis/Celery jobs."""

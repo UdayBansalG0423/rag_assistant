@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
-import { loginUser, registerUser } from "@/lib/api";
+import { loginUser, registerUser } from "@/services/auth.service";
 import {
   AuthUser,
   clearStoredToken,

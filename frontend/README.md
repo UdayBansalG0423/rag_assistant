@@ -64,7 +64,7 @@ graph TD
 - **Tailwind CSS**: Utility-first styling (configured via `tailwind.config.js`).
 - **Supabase**: Authentication and user session hooks (`use-auth.ts`).
 
-### Backend (Production-level-RAG-system)
+### Backend (backend)
 - **FastAPI**: High-performance asynchronous API framework.
 - **Pinecone**: Cloud-native Vector Database for storing document embeddings.
 - **Python 3.10+**: Core backend runtime.
@@ -76,13 +76,13 @@ graph TD
 
 ```text
 📦 my-vly-project
- ┣ 📂 Production-level-RAG-system/   # FastAPI Python Backend
+ ┣ 📂 backend/                      # FastAPI Python Backend
  ┃ ┣ 📂 app/                         # Application logic
  ┃ ┃ ┣ 📂 api/                       # API routing and auth
  ┃ ┃ ┣ 📂 core/                      # Global config, DB connection, logging
  ┃ ┃ ┣ 📂 models/                    # Data models (SQL/Pydantic)
  ┃ ┃ ┗ 📂 services/                  # Business Logic (RAG, Embeddings, LLM)
- ┃ ┣ 📂 data/                        # Ingestion scripts (index_document.py)
+ ┃ ┣ 📂 scripts/                     # Ingestion / reindex scripts
  ┃ ┗ 📜 Dockerfile                   # Backend Dockerization
  ┣ 📂 src/                           # React Frontend Source files
  ┃ ┣ 📂 components/                  # Reusable UI components & dialogs
@@ -113,7 +113,7 @@ npm run dev
 
 ### 2. Setup FastAPI Backend
 ```bash
-cd Production-level-RAG-system
+cd backend
 
 # Create a virtual environment
 python -m venv venv

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowRight, BookOpen, Clock3, Upload, MessageSquare, Sparkles, RefreshCw } from "lucide-react";
-import { AppShell } from "@/components/AppShell";
+import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { getDocuments } from "@/lib/api";
 

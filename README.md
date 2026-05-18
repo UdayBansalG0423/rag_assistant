@@ -44,7 +44,7 @@ NeuralDoc AI solves these problems by providing a modular, secure, scalable RAG 
 
 ## 🏗 System Architecture
 
-![Architecture Diagram](rag_assistant/assets/architecturaldiagram.png)
+![Architecture Diagram](docs/architecture/architecturaldiagram.png)
 
 Key Design Decisions:
 
@@ -153,13 +153,13 @@ This separation ensures development flexibility and production scalability.
 ### 📄 Upload Document
 Drop a PDF into the Knowledge Base panel and click **Upload & Index**.
 
-![Upload Document](rag_assistant/assets/Load.png)
+![Upload Document](docs/architecture/Load.png)
 ---
 
 ###  💬 Ask Contextual Questions
 Type your question in the chat input and hit send.
 
-![Ask Question](rag_assistant/assets/ask.png)
+![Ask Question](docs/architecture/ask.png)
 
 
 ## 🎯 What I Learned

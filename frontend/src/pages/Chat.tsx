@@ -2,17 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Clock, FileText, Loader2, MessageSquare, Plus, Sparkles, Send, Upload } from "lucide-react";
-import { AppShell } from "@/components/AppShell";
+import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import {
-  askQuery,
   createChatSession,
   getChatHistory,
   getChatSessions,
-  getDocuments,
   saveChatMessage,
-  uploadPdf,
-} from "@/lib/api";
+} from "@/services/chat.service";
+import { askQuery } from "@/services/rag.service";
+import { getDocuments, uploadPdf } from "@/services/document.service";
 
 type ChatMessage = {
   id: string;
@@ -88,7 +87,13 @@ export default function Chat() {
     try {
       const history = await getChatHistory(sessionId);
       setActiveSessionId(sessionId);
-      setMessages(history.messages ?? []);
+      setMessages(
+        (history.messages ?? []).map((message) => ({
+          ...message,
+          latency: message.latency ?? undefined,
+          timestamp: message.timestamp ?? new Date().toISOString(),
+        })),
+      );
     } catch (error: any) {
       toast.error(error.message || "Failed to load chat history");
     } finally {
