@@ -1,10 +1,33 @@
 from datetime import datetime
 from fastapi import HTTPException
 from app.core.supabase_client import supabase_admin
+from postgrest.exceptions import APIError
 import uuid
 
 
 class ChatService:
+    @staticmethod
+    def _raise_if_schema_missing(error: Exception) -> None:
+        if isinstance(error, APIError):
+            payload = getattr(error, "json", None)
+            if callable(payload):
+                payload = payload()
+            code = payload.get("code") if isinstance(payload, dict) else None
+            message = payload.get("message") if isinstance(payload, dict) else str(error)
+
+            if code == "PGRST205":
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        "Supabase chat tables are missing in schema cache. "
+                        "Create `chat_sessions` and `chat_messages`, then refresh the Supabase API schema cache."
+                    ),
+                )
+
+            raise HTTPException(status_code=500, detail=f"Supabase API error: {message}")
+
+        raise HTTPException(status_code=500, detail="Unexpected chat service error")
+
     def create_session(self, user_id: str, title: str | None = None):
         session_id = str(uuid.uuid4())
         session_title = (title or "New chat").strip() or "New chat"
@@ -17,17 +40,23 @@ class ChatService:
             "updated_at": datetime.utcnow().isoformat(),
         }
 
-        supabase_admin.table("chat_sessions").insert(record).execute()
+        try:
+            supabase_admin.table("chat_sessions").insert(record).execute()
+        except Exception as exc:
+            self._raise_if_schema_missing(exc)
         return record
 
     def list_sessions(self, user_id: str):
-        response = (
-            supabase_admin.table("chat_sessions")
-            .select("*")
-            .eq("user_id", user_id)
-            .order("updated_at", desc=True)
-            .execute()
-        )
+        try:
+            response = (
+                supabase_admin.table("chat_sessions")
+                .select("*")
+                .eq("user_id", user_id)
+                .order("updated_at", desc=True)
+                .execute()
+            )
+        except Exception as exc:
+            self._raise_if_schema_missing(exc)
         return response.data or []
 
     def save_message(
@@ -40,14 +69,17 @@ class ChatService:
         latency: float | None = None,
         title: str | None = None,
     ):
-        session_response = (
-            supabase_admin.table("chat_sessions")
-            .select("*")
-            .eq("id", session_id)
-            .eq("user_id", user_id)
-            .single()
-            .execute()
-        )
+        try:
+            session_response = (
+                supabase_admin.table("chat_sessions")
+                .select("*")
+                .eq("id", session_id)
+                .eq("user_id", user_id)
+                .single()
+                .execute()
+            )
+        except Exception as exc:
+            self._raise_if_schema_missing(exc)
 
         session = session_response.data
         if not session:
@@ -58,10 +90,13 @@ class ChatService:
         if session_title == "New chat" and title:
             session_title = title.strip() or session_title
 
-        supabase_admin.table("chat_sessions").update({
-            "title": session_title,
-            "updated_at": now,
-        }).eq("id", session_id).eq("user_id", user_id).execute()
+        try:
+            supabase_admin.table("chat_sessions").update({
+                "title": session_title,
+                "updated_at": now,
+            }).eq("id", session_id).eq("user_id", user_id).execute()
+        except Exception as exc:
+            self._raise_if_schema_missing(exc)
 
         message_id = str(uuid.uuid4())
         record = {
@@ -75,30 +110,39 @@ class ChatService:
             "created_at": now,
         }
 
-        supabase_admin.table("chat_messages").insert(record).execute()
+        try:
+            supabase_admin.table("chat_messages").insert(record).execute()
+        except Exception as exc:
+            self._raise_if_schema_missing(exc)
         return record
 
     def load_history(self, user_id: str, session_id: str):
-        session_response = (
-            supabase_admin.table("chat_sessions")
-            .select("*")
-            .eq("id", session_id)
-            .eq("user_id", user_id)
-            .single()
-            .execute()
-        )
+        try:
+            session_response = (
+                supabase_admin.table("chat_sessions")
+                .select("*")
+                .eq("id", session_id)
+                .eq("user_id", user_id)
+                .single()
+                .execute()
+            )
+        except Exception as exc:
+            self._raise_if_schema_missing(exc)
         session = session_response.data
         if not session:
             raise HTTPException(status_code=404, detail="Chat session not found")
 
-        response = (
-            supabase_admin.table("chat_messages")
-            .select("*")
-            .eq("session_id", session_id)
-            .eq("user_id", user_id)
-            .order("created_at", desc=False)
-            .execute()
-        )
+        try:
+            response = (
+                supabase_admin.table("chat_messages")
+                .select("*")
+                .eq("session_id", session_id)
+                .eq("user_id", user_id)
+                .order("created_at", desc=False)
+                .execute()
+            )
+        except Exception as exc:
+            self._raise_if_schema_missing(exc)
 
         exchanges = response.data or []
         messages = []

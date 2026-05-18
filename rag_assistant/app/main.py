@@ -5,7 +5,7 @@ from app.schemas.response import AskResponse
 from app.routes.documents import router as documents_router
 from app.routes.chat import router as chat_router
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from app.services.auth_service import get_current_user_from_credentials
 from app.routes.auth import router as auth_router
 import logging
@@ -29,7 +29,10 @@ if STATIC_DIR.exists():
 
 @app.get("/")
 def serve_frontend():
-    return FileResponse(STATIC_DIR / "index.html")
+    index_path = STATIC_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return JSONResponse({"message": "NeuralDoc RAG API is running"})
 
 
 @app.get("/ask", response_model=AskResponse)

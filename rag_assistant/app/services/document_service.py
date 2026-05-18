@@ -1,8 +1,10 @@
 from pathlib import Path
 from fastapi import HTTPException, UploadFile
 from app.core.supabase_client import supabase_admin
+from app.services.rag_service import RAGService
 from supabase import create_client
 import os
+import tempfile
 import uuid
 
 
@@ -39,6 +41,21 @@ class DocumentService:
         }
 
         supabase_admin.table("documents").insert(record).execute()
+
+        temp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+                temp_file.write(file_bytes)
+                temp_path = temp_file.name
+
+            rag_service = RAGService()
+            rag_service.index_pdf(temp_path, user_id=user_id, document_id=document_id)
+
+            supabase_admin.table("documents").update({"status": "completed"}).eq("id", document_id).eq("user_id", user_id).execute()
+            record["status"] = "completed"
+        finally:
+            if temp_path and os.path.exists(temp_path):
+                os.remove(temp_path)
 
         return {
             **record,

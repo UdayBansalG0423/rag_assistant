@@ -38,7 +38,7 @@ class RAGService:
             else:
                 print("No existing vector store found.")
 
-    def index_pdf(self, path: str, user_id: str = None):
+    def index_pdf(self, path: str, user_id: str = None, document_id: str = None):
         reader = PdfReader(path)
         text = ""
 
@@ -48,10 +48,10 @@ class RAGService:
         chunks = [text[i:i+500] for i in range(0, len(text), 500)]
         embeddings = self.embedding_provider.embed(chunks)
 
-        doc_id = os.path.basename(path)
+        doc_id = document_id or os.path.basename(path)
         # default: no user namespace
         if self.vector_provider == "pinecone":
-            self.vector_store.add_embeddings(embeddings, chunks, doc_id, namespace=user_id)
+            self.vector_store.add_embeddings(embeddings, chunks, doc_id, user_id=user_id)
         else:
             self.vector_store.add_embeddings(embeddings, chunks, user_id=user_id)
             self.vector_store.save(f"vector_store/{user_id}" if user_id else "vector_store")
@@ -59,10 +59,14 @@ class RAGService:
 
     def retrieve(self, query: str, user_id: str = None):
         query_embedding = self.embedding_provider.embed([query])[0]
+        logger.info(f"Retrieval query generated for user_id={user_id}")
         if self.vector_provider == "pinecone":
-            return self.vector_store.search(query_embedding, namespace=user_id)
+            results = self.vector_store.search(query_embedding, user_id=user_id)
         else:
-            return self.vector_store.search(query_embedding, user_id=user_id)
+            results = self.vector_store.search(query_embedding, user_id=user_id)
+
+        logger.info(f"Retrieved matches: {len(results)}")
+        return results
 
     def generate(self, query: str, user_id: str = None):
 
