@@ -23,7 +23,7 @@ export function useDocumentPolling({
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const pollTimeoutRef = useRef<NodeJS.Timeout>();
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const fetchDocuments = async () => {
     try {

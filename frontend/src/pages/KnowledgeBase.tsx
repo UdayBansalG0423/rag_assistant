@@ -25,7 +25,7 @@ export default function KnowledgeBase() {
     const query = search.trim().toLowerCase();
     if (!query) return documents;
     return documents.filter((doc) => {
-      const label = (doc.file_name || doc.filename || doc.name || "").toLowerCase();
+      const label = (doc.filename || "").toLowerCase();
       return label.includes(query);
     });
   }, [documents, search]);
@@ -131,7 +131,7 @@ export default function KnowledgeBase() {
             ) : (
               filteredDocuments.map((doc, index) => (
                 <div
-                  key={`${doc.id || doc.filename || doc.name || index}`}
+                  key={`${doc.id || doc.filename || index}`}
                   className="flex items-center gap-3 border-b border-white/6 px-3 py-2 last:border-b-0"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -140,7 +140,7 @@ export default function KnowledgeBase() {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-white max-w-[52ch]">
-                        {doc.file_name || doc.filename || doc.name || `Document ${index + 1}`}
+                        {doc.filename || `Document ${index + 1}`}
                       </p>
                       <p className="text-[11px] text-white/40 mt-0.5">
                         {doc.status === "completed"

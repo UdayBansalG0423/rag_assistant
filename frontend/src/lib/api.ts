@@ -24,7 +24,7 @@ type AuthResponse = {
   token_type: string;
 };
 
- type DocumentRecord = {
+export type DocumentRecord = {
    id: string;
    user_id: string;
    filename: string;
