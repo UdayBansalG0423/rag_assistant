@@ -24,13 +24,16 @@ type AuthResponse = {
   token_type: string;
 };
 
-type DocumentRecord = {
-  id: string;
-  user_id: string;
-  filename: string;
-  storage_path: string;
-  created_at?: string | null;
-};
+ type DocumentRecord = {
+   id: string;
+   user_id: string;
+   filename: string;
+   storage_path: string;
+   status?: "processing" | "completed" | "failed";
+   progress?: number;
+   error?: string;
+   created_at?: string | null;
+ };
 
 type ChatSessionRecord = {
   id: string;

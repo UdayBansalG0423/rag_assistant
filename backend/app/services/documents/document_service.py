@@ -2,13 +2,12 @@ from pathlib import Path
 import os
 import tempfile
 import uuid
-import threading
 
 from fastapi import HTTPException, UploadFile
 from supabase import create_client
 
 from app.core.supabase_client import supabase_admin
-from app.services.rag.orchestrator import RAGService
+from app.core.queue import enqueue_task
 
 
 class DocumentService:
@@ -41,6 +40,7 @@ class DocumentService:
             "file_name": file.filename,
             "storage_path": storage_path,
             "status": "processing",
+            "progress": 0,
         }
 
         supabase_admin.table("documents").insert(record).execute()
@@ -49,18 +49,13 @@ class DocumentService:
             temp_file.write(file_bytes)
             temp_path = temp_file.name
 
-        def run_indexing():
-            try:
-                rag_service = RAGService()
-                rag_service.index_pdf(temp_path, user_id=user_id, document_id=document_id)
-                supabase_admin.table("documents").update({"status": "completed"}).eq("id", document_id).eq("user_id", user_id).execute()
-            except Exception as exc:
-                supabase_admin.table("documents").update({"status": "failed", "error": str(exc)}).eq("id", document_id).eq("user_id", user_id).execute()
-            finally:
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
-
-        threading.Thread(target=run_indexing, daemon=True).start()
+        # Enqueue task to Redis for async processing
+        enqueue_task({
+            "file_path": temp_path,
+            "user_id": user_id,
+            "document_id": document_id,
+            "temp_file": True
+        })
 
         return {**record, "message": "File uploaded successfully"}
 

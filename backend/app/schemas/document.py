@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 
 class DocumentRecord(BaseModel):
@@ -6,7 +7,10 @@ class DocumentRecord(BaseModel):
     user_id: str
     file_name: str
     storage_path: str
-    created_at: str | None = None
+    status: str = "processing"  # processing, completed, failed
+    progress: int = 0  # 0-100
+    created_at: Optional[str] = None
+    error: Optional[str] = None  # Error message if failed
 
 
 class UploadDocumentResponse(DocumentRecord):
