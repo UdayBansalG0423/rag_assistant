@@ -1,46 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { FileText, Loader2, RefreshCw, Upload, DatabaseZap, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import UploadProgress from "@/components/UploadProgress";
-import { getDocuments, uploadPdf } from "@/services/document.service";
-
-type DocumentItem = {
-  id?: string;
-  filename?: string;
-  name?: string;
-};
+import { uploadPdf } from "@/services/document.service";
+import { useDocumentPolling } from "@/hooks/use-document-polling";
+import { DocumentStatusDisplay } from "@/components/DocumentStatusDisplay";
 
 export default function KnowledgeBase() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const loadDocuments = async () => {
-    setLoading(true);
-    try {
-      const docs = await getDocuments();
-      setDocuments((docs.documents ?? []) as DocumentItem[]);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to load documents");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadDocuments();
-  }, []);
+  // Use polling hook to automatically update documents
+  const { documents, loading, error, refresh, hasProcessing } = useDocumentPolling({
+    pollInterval: 2000, // Poll every 2 seconds
+    enabled: true,
+    stopWhenComplete: false, // Keep polling even after completion
+  });
 
   const filteredDocuments = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return documents;
     return documents.filter((doc) => {
-      const label = (doc.filename || doc.name || "").toLowerCase();
+      const label = (doc.file_name || doc.filename || doc.name || "").toLowerCase();
       return label.includes(query);
     });
   }, [documents, search]);
@@ -54,7 +39,7 @@ export default function KnowledgeBase() {
       const response = await uploadPdf(file);
       setActiveDocumentId(response.id);
       toast.success(`${response.filename || file.name} uploaded`);
-      await loadDocuments();
+      refresh(); // Trigger immediate refresh
     } catch (error: any) {
       toast.error(error.message || "Upload failed");
     } finally {
@@ -68,63 +53,57 @@ export default function KnowledgeBase() {
       title="Knowledge Base"
       description="Upload PDFs, inspect what is indexed, and keep the document library organized."
       actions={
-        <Button variant="outline" className="gap-2 border-white/10 bg-white/5 text-white/75 hover:bg-white/10" onClick={loadDocuments}>
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <input ref={inputRef} type="file" accept=".pdf" className="hidden" onChange={handleUpload} />
+          <Button onClick={() => inputRef.current?.click()} className="gap-2 bg-white text-black hover:bg-white/90">
+            <Upload className="h-4 w-4" />
+            Upload
+          </Button>
+          <Button variant="outline" className="gap-2 border-white/10 bg-white/5 text-white/75 hover:bg-white/10" onClick={refresh}>
+            <RefreshCw className={`h-4 w-4 ${hasProcessing ? 'animate-spin' : ''}`} />
+            {hasProcessing ? "Polling..." : "Refresh"}
+          </Button>
+        </div>
       }
     >
-      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur">
+      <div className="grid gap-6 xl:grid-cols-[0.6fr_1.4fr]">
+        <section className="rounded-[1.25rem] bg-white/[0.02] p-4">
           <p className="text-xs uppercase tracking-[0.22em] text-white/35">Upload docs</p>
           <h2 className="mt-2 text-2xl font-semibold text-white">Manage your document library</h2>
           <p className="mt-3 text-sm leading-7 text-white/55">
             Add PDFs to the retrieval store, then use the chat workspace to query them. The UI keeps the flow clear even when the backend is still indexing.
           </p>
 
-          <input ref={inputRef} type="file" accept=".pdf" className="hidden" onChange={handleUpload} />
-          <div className="mt-5 rounded-3xl border border-dashed border-white/10 bg-black/20 p-5">
-            <div className="flex items-start gap-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-blue-300">
-                <Upload className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-white">Drop PDFs into the knowledge base</p>
-                <p className="mt-1 text-sm text-white/45">Only PDFs are accepted by the current backend endpoint.</p>
-                <Button
-                  className="mt-4 gap-2 bg-white text-black hover:bg-white/90"
-                  onClick={() => inputRef.current?.click()}
-                  disabled={uploading}
-                >
-                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  {uploading ? "Uploading..." : "Upload PDF"}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/35">Indexed status</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/35">Processing status</p>
               <div className="mt-2 flex items-center gap-2 text-white">
-                <DatabaseZap className="h-4 w-4 text-blue-300" />
-                <span>{documents.length > 0 ? "Active" : "Waiting for documents"}</span>
+                {hasProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+                    <span>Processing documents...</span>
+                  </>
+                ) : (
+                  <>
+                    <DatabaseZap className="h-4 w-4 text-green-400" />
+                    <span>{documents.length > 0 ? "Ready" : "Waiting"}</span>
+                  </>
+                )}
               </div>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div className="rounded-2xl bg-black/10 p-3">
               <p className="text-xs uppercase tracking-[0.2em] text-white/35">Document count</p>
               <div className="mt-2 text-white">{documents.length} files</div>
             </div>
           </div>
-
           {activeDocumentId ? (
-            <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-4">
+            <div className="mt-4 rounded-2xl bg-black/10 p-3">
               <UploadProgress documentId={activeDocumentId} />
             </div>
           ) : null}
         </section>
 
-        <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur">
+        <section className="rounded-[1.25rem] bg-white/[0.02] p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-white/35">Manage documents</p>
@@ -140,30 +119,50 @@ export default function KnowledgeBase() {
             </div>
           </div>
 
-          <div className="mt-5 space-y-3">
+          <div className="mt-4">
             {loading ? (
               <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-6 text-sm text-white/45">
                 Loading documents...
               </div>
             ) : filteredDocuments.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-6 text-sm text-white/45">
+              <div className="rounded-2xl bg-black/10 p-4 text-sm text-white/45">
                 No documents match this filter.
               </div>
             ) : (
               filteredDocuments.map((doc, index) => (
-                <div key={`${doc.filename || doc.name || index}`} className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                <div
+                  key={`${doc.id || doc.filename || doc.name || index}`}
+                  className="flex items-center gap-3 border-b border-white/6 px-3 py-2 last:border-b-0"
+                >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-2 text-blue-300">
+                    <div className="rounded-md bg-white/5 p-2 text-blue-300">
                       <FileText className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-white">{doc.filename || doc.name || `Document ${index + 1}`}</p>
-                      <p className="text-xs text-white/35">Ready for chat workspace</p>
+                      <p className="truncate text-sm font-medium text-white max-w-[52ch]">
+                        {doc.file_name || doc.filename || doc.name || `Document ${index + 1}`}
+                      </p>
+                      <p className="text-[11px] text-white/40 mt-0.5">
+                        {doc.status === "completed"
+                          ? "Ready"
+                          : doc.status === "failed"
+                          ? "Failed"
+                          : doc.status === "queued"
+                          ? "Queued"
+                          : "Processing"}
+                      </p>
                     </div>
                   </div>
-                  <button className="rounded-lg p-2 text-white/30 hover:bg-white/5 hover:text-white/70">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <div className="ml-auto">
+                    <DocumentStatusDisplay
+                      status={doc.status || "processing"}
+                      progress={doc.progress}
+                      error={doc.error}
+                      onRetry={() => {
+                        toast.info("Retry feature coming soon");
+                      }}
+                    />
+                  </div>
                 </div>
               ))
             )}

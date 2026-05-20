@@ -51,17 +51,21 @@ class PineconeVectorStore:
         vectors = []
 
         for chunk_index, (embedding, text) in enumerate(zip(embeddings, texts)):
+            chunk_text = text.get("chunk") if isinstance(text, dict) else text
+            chunk_metadata = text.get("metadata", {}) if isinstance(text, dict) else {}
             if hasattr(embedding, "tolist"):
                 embedding = embedding.tolist()
             vectors.append({
                 "id": str(uuid.uuid4()),
                 "values": embedding,
                 "metadata": {
-                    "chunk": _safe_text(text),
+                    "chunk": _safe_text(chunk_text),
                     "doc_id": _safe_text(doc_id),
                     "user_id": _safe_text(user_id),
                     "document_id": _safe_text(doc_id),
                     "chunk_index": chunk_index,
+                    "page": chunk_metadata.get("page"),
+                    "source": _safe_text(chunk_metadata.get("source")),
                 }
             })
 
@@ -111,6 +115,7 @@ class PineconeVectorStore:
             formatted.append({
                 "chunk": _safe_text(metadata.get("chunk", "")),
                 "doc_id": _safe_text(metadata.get("doc_id") or metadata.get("document_id")),
+                "metadata": metadata,
                 "score": match["score"],
             })
 

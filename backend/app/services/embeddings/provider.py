@@ -76,34 +76,27 @@ class EmbeddingProvider:
 
         if self.provider == "local":
             model = self._get_local_model()
-            embeddings = []
             batch_size = int(os.getenv("EMBED_BATCH_SIZE", "32"))
+            clean_chunks = [
+                str(chunk).strip()
+                for chunk in texts
+                if chunk and str(chunk).strip()
+            ]
 
-            # Process in batches for performance; fall back to item-level on batch failure
-            for i in range(0, len(texts), batch_size):
-                batch = texts[i : i + batch_size]
-                try:
-                    batch_emb = model.encode(batch)
-                    # normalize returned structure
-                    for emb in batch_emb:
-                        if hasattr(emb, "tolist"):
-                            embeddings.append(emb.tolist())
-                        else:
-                            embeddings.append(list(emb))
-                except Exception as batch_exc:
-                    logger.warning("Batch encode failed at batch starting %d: %s", i, batch_exc)
-                    # per-item fallback for this batch
-                    for j, text in enumerate(batch):
-                        try:
-                            single_emb = model.encode([text])
-                            e = single_emb[0]
-                            embeddings.append(e.tolist() if hasattr(e, "tolist") else list(e))
-                        except Exception as item_exc:
-                            logger.warning(
-                                "Skipping embedding for chunk %d due to invalid input: %s",
-                                i + j,
-                                item_exc,
-                            )
+            print(f"Total chunks: {len(clean_chunks)}")
+
+            embeddings = model.encode(
+                clean_chunks,
+                batch_size=batch_size,
+                show_progress_bar=True,
+            )
+
+            if hasattr(embeddings, "tolist"):
+                embeddings = embeddings.tolist()
+            else:
+                embeddings = [emb.tolist() if hasattr(emb, "tolist") else list(emb) for emb in embeddings]
+
+            print("Embeddings generated successfully")
 
             return embeddings
 

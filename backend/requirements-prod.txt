@@ -8,9 +8,14 @@ mlflow
 python-dotenv
 python-multipart
 numpy<2
+celery
+redis
+supabase>=2.0.0
+SQLAlchemy
 torch==2.4.0+cpu
 --extra-index-url https://download.pytorch.org/whl/cpu
 sentence-transformers==2.7.0
 transformers==4.41.2
 python-jose[cryptography]
 passlib[bcrypt]
+pydantic[email]

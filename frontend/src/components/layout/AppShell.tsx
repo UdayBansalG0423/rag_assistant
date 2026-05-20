@@ -66,9 +66,9 @@ export function AppShell({
 	const userLabel = user?.username ?? "workspace";
 
 	return (
-		<div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(99,102,241,0.12),_transparent_28%),linear-gradient(180deg,_#080a0f,_#06070b_60%,_#05060a)] text-white">
-			<div className="flex min-h-screen">
-				<aside className="hidden lg:flex w-72 flex-col border-r border-white/10 bg-black/20 backdrop-blur-xl">
+		<div className="h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(99,102,241,0.12),_transparent_28%),linear-gradient(180deg,_#080a0f,_#06070b_60%,_#05060a)] text-white">
+			<div className="flex h-screen w-full">
+				<aside className="hidden lg:flex w-[240px] flex-col border-r border-white/10 bg-black/20 backdrop-blur-xl">
 					<div className="px-6 pt-6 pb-5 border-b border-white/10">
 						<div className="flex items-center gap-3">
 							<Logo className="h-9 w-9 drop-shadow-[0_0_10px_rgba(59,130,246,0.35)]" />
@@ -88,10 +88,10 @@ export function AppShell({
 									to={item.to}
 									className={({ isActive }) =>
 										[
-											"flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
+											"flex items-center gap-3 rounded-r-xl px-4 py-3 text-sm font-medium transition-all border-l-2",
 											isActive
-												? "bg-white/10 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.04)]"
-												: "text-white/55 hover:bg-white/5 hover:text-white/85",
+												? "border-blue-500 bg-blue-500/10 text-white"
+												: "border-transparent text-white/55 hover:bg-white/5 hover:text-white/85",
 										].join(" ")
 									}
 								>
@@ -145,7 +145,9 @@ export function AppShell({
 						<div className="px-4 sm:px-6 pb-4 text-sm text-white/45">{description}</div>
 					</header>
 
-					<main className="flex-1 px-4 sm:px-6 py-6">{children}</main>
+					<main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 pb-24 lg:pb-6 relative flex flex-col min-h-0">
+						{children}
+					</main>
 				</div>
 			</div>
 

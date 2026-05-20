@@ -2,13 +2,14 @@ from pathlib import Path
 import os
 import tempfile
 import uuid
-import threading
 
 from fastapi import HTTPException, UploadFile
 from supabase import create_client
 
+from app.core.logger import logger
 from app.core.supabase_client import supabase_admin
-from app.services.rag.orchestrator import RAGService
+from app.utils.hash import generate_file_hash
+from app.workers.indexing_tasks import process_document
 
 
 class DocumentService:
@@ -25,12 +26,31 @@ class DocumentService:
 
     async def upload_document(self, file: UploadFile, user_id: str):
         filename = Path(file.filename or "document.pdf").name
+        logger.info("Upload started | user_id=%s file_name=%s", user_id, filename)
         if not filename.lower().endswith(".pdf"):
             raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
 
+        file_bytes = await file.read()
+
+        file_hash = generate_file_hash(file_bytes)
+
+        existing_doc = (
+            supabase_admin.table("documents")
+            .select("*")
+            .eq("file_hash", file_hash)
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+        if existing_doc.data:
+            logger.info("Duplicate document detected | user_id=%s file_name=%s", user_id, filename)
+            raise HTTPException(
+                status_code=400,
+                detail="Document already uploaded"
+            )
+
         document_id = str(uuid.uuid4())
         storage_path = f"{user_id}/{document_id}.pdf"
-        file_bytes = await file.read()
 
         storage_client = create_client(self.supabase_url, self.service_key).storage
         storage_client.from_(self.bucket_name).upload(storage_path, file_bytes)
@@ -40,28 +60,44 @@ class DocumentService:
             "user_id": user_id,
             "file_name": file.filename,
             "storage_path": storage_path,
-            "status": "processing",
+            "file_hash": file_hash,
+            "status": "queued",
+            "progress": 0,
         }
 
         supabase_admin.table("documents").insert(record).execute()
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+        temp_dir = Path(os.getenv("UPLOAD_DIR", "/app/tmp_uploads"))
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", dir=temp_dir) as temp_file:
             temp_file.write(file_bytes)
             temp_path = temp_file.name
 
-        def run_indexing():
-            try:
-                rag_service = RAGService()
-                rag_service.index_pdf(temp_path, user_id=user_id, document_id=document_id)
-                supabase_admin.table("documents").update({"status": "completed"}).eq("id", document_id).eq("user_id", user_id).execute()
-            except Exception as exc:
-                supabase_admin.table("documents").update({"status": "failed", "error": str(exc)}).eq("id", document_id).eq("user_id", user_id).execute()
-            finally:
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
+        try:
+            process_document.delay(
+                file_path=temp_path,
+                user_id=str(user_id),
+                document_id=str(document_id)
+            )
+            logger.info(
+                "Task queued successfully | document_id=%s user_id=%s status=queued",
+                document_id,
+                user_id,
+            )
+        except Exception as exc:
+            supabase_admin.table("documents").update({
+                "status": "failed",
+                "progress": 0,
+            }).eq("id", document_id).eq("user_id", user_id).execute()
+            logger.exception(
+                "Failed to enqueue indexing task | document_id=%s user_id=%s",
+                document_id,
+                user_id,
+            )
+            raise HTTPException(status_code=500, detail=f"Failed to enqueue indexing task: {exc}")
 
-        threading.Thread(target=run_indexing, daemon=True).start()
-
+        logger.info("Upload completed | document_id=%s user_id=%s", document_id, user_id)
         return {**record, "message": "File uploaded successfully"}
 
     def list_documents(self, user_id: str):
