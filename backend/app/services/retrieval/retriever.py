@@ -13,6 +13,16 @@ class VectorStore:
         self.dim = dim
 
     def add_embeddings(self, embeddings, texts, user_id: str = None):
+        normalized_texts = []
+        for item in texts:
+            if isinstance(item, dict):
+                normalized_texts.append({
+                    "chunk": item.get("chunk", ""),
+                    "metadata": item.get("metadata", {}),
+                })
+            else:
+                normalized_texts.append({"chunk": item, "metadata": {}})
+
         if user_id:
             path = f"vector_store/{user_id}"
             try:
@@ -25,7 +35,7 @@ class VectorStore:
                 self.index = self.faiss.IndexFlatL2(self.dim)
 
         self.index.add(np.array(embeddings))
-        self.text_chunks.extend(texts)
+        self.text_chunks.extend(normalized_texts)
 
         if user_id:
             self.save(path)
@@ -48,8 +58,17 @@ class VectorStore:
             if dist >= 1e30:
                 continue
 
+            chunk_record = self.text_chunks[idx]
+            if isinstance(chunk_record, dict):
+                chunk = chunk_record.get("chunk", "")
+                metadata = chunk_record.get("metadata", {})
+            else:
+                chunk = chunk_record
+                metadata = {}
+
             results.append({
-                "chunk": self.text_chunks[idx],
+                "chunk": chunk,
+                "metadata": metadata,
                 "score": float(dist)
             })
 

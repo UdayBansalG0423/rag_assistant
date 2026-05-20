@@ -1,4 +1,11 @@
 __pycache__
+.pytest_cache
+.venv
+logs
+mlruns
+vector_store
+vector_store_progress
+*.log__pycache__
 *.pyc
 *.pyo
 *.pyd

@@ -33,15 +33,29 @@ def update_document_status(
         
         if error:
             update_data["error"] = error
-        
-        supabase_admin.table("documents").update(
-            update_data
-        ).eq("id", document_id).eq("user_id", user_id).execute()
-        
-        logger.debug(f"✅ Updated {document_id}: status={status}, progress={progress}")
+
+        try:
+            supabase_admin.table("documents").update(
+                update_data
+            ).eq("id", document_id).eq("user_id", user_id).execute()
+        except Exception as update_error:
+            if error and "error" in update_data:
+                logger.warning(
+                    "Retrying document update without error field | document_id=%s reason=%s",
+                    document_id,
+                    update_error,
+                )
+                update_data.pop("error", None)
+                supabase_admin.table("documents").update(
+                    update_data
+                ).eq("id", document_id).eq("user_id", user_id).execute()
+            else:
+                raise
+
+        logger.debug("Updated %s: status=%s, progress=%s", document_id, status, progress)
         
     except Exception as e:
-        logger.error(f"❌ Failed to update document {document_id}: {str(e)}")
+        logger.error("Failed to update document %s: %s", document_id, e)
 
 
 def mark_processing(user_id: str, document_id: str, progress: int = 0):

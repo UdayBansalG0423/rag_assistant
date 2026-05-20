@@ -38,7 +38,7 @@ export function useDocumentPolling({
   };
 
   const hasProcessing = () => {
-    return documents.some(doc => doc.status === "processing");
+    return documents.some(doc => doc.status === "queued" || doc.status === "processing");
   };
 
   useEffect(() => {

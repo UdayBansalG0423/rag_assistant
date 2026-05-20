@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Clock, FileText, Loader2, MessageSquare, Plus, Sparkles, Send, Upload } from "lucide-react";
-import { AppShell } from "@/components/layout/AppShell";
+import { Clock, FileText, Loader2, Plus, Sparkles, Send, PanelLeft, Paperclip, ArrowLeft } from "lucide-react";
+import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import {
   createChatSession,
@@ -36,6 +36,7 @@ type ChatSessionItem = {
 };
 
 export default function Chat() {
+  const [selectedDocs, setSelectedDocs] = useState<Record<string, boolean>>({});
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [sessions, setSessions] = useState<ChatSessionItem[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
@@ -46,6 +47,7 @@ export default function Chat() {
   const [query, setQuery] = useState("");
   const [sending, setSending] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -61,6 +63,11 @@ export default function Chat() {
     } finally {
       setLoadingDocs(false);
     }
+  };
+
+  const toggleDoc = (id?: string) => {
+    if (!id) return;
+    setSelectedDocs((s) => ({ ...s, [id]: !s[id] }));
   };
 
   const fetchSessions = async (preferLatest = false) => {
@@ -208,201 +215,227 @@ export default function Chat() {
   };
 
   return (
-    <AppShell
-      title="Chat Workspace"
-      description="Talk to your indexed documents in a focused workspace with sources, latency, and document context."
-      actions={
-        <Button
-          variant="outline"
-          className="gap-2 border-white/10 bg-white/5 text-white/75 hover:bg-white/10"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-          {uploading ? "Uploading..." : "Upload PDF"}
-        </Button>
-      }
-    >
+    <div className="flex h-screen w-screen bg-[#212121] text-slate-300 font-sans overflow-hidden">
       <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleUpload} />
-      <div className="grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
-        <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur">
-          <div className="flex items-center gap-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-blue-300">
-              <MessageSquare className="h-5 w-5" />
+
+      {/* Sidebar */}
+      <AnimatePresence initial={false}>
+        {isSidebarOpen && (
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 260, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            className="flex-shrink-0 bg-[#171717] flex flex-col h-full overflow-hidden whitespace-nowrap"
+          >
+            <div className="flex items-center justify-between p-3">
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="p-2 text-white/50 hover:text-white transition rounded-md ml-auto lg:hidden"
+              >
+                <PanelLeft className="h-5 w-5" />
+              </button>
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-white/35">Context panel</p>
-              <h2 className="mt-2 text-xl font-semibold text-white">Documents available to chat with</h2>
-            </div>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {loadingDocs ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-6 text-sm text-white/45">
-                Loading documents...
-              </div>
-            ) : documents.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-6 text-sm text-white/45">
-                No documents available yet. Upload a PDF to start talking to your data.
-              </div>
-            ) : (
-              documents.map((doc, index) => (
-                <div key={`${doc.filename || doc.name || index}`} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-2 text-blue-300">
-                    <FileText className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-white">{doc.filename || doc.name || `Document ${index + 1}`}</p>
-                    <p className="text-xs text-white/35">Indexed and searchable</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4">
-            <p className="text-xs uppercase tracking-[0.22em] text-white/35">Tip</p>
-            <p className="mt-2 text-sm leading-7 text-white/55">
-              Keep questions short and specific for better retrieval. The assistant will surface document sources and latency after each reply.
-            </p>
-          </div>
-
-          <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-black/20 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-white/35">Recent chats</p>
-                <h3 className="mt-2 text-base font-semibold text-white">Your conversations</h3>
-              </div>
+            <div className="px-3">
               <Button
-                variant="outline"
-                className="gap-2 border-white/10 bg-white/5 text-white/75 hover:bg-white/10"
+                variant="ghost"
+                className="justify-between text-white/80 hover:bg-white/10 w-full rounded-xl bg-white/5 py-6"
                 onClick={startNewChat}
               >
+                <div className="flex items-center gap-2">
+                  <div className="rounded-full bg-white/10 p-1">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <span className="font-semibold">New chat</span>
+                </div>
                 <Plus className="h-4 w-4" />
-                New
               </Button>
             </div>
 
-            <div className="mt-4 space-y-2 max-h-[320px] overflow-y-auto pr-1">
+            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+              <p className="px-2 text-xs font-semibold text-white/40 mb-3">Recent</p>
               {loadingSessions ? (
-                <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-4 text-sm text-white/45">
-                  Loading chats...
-                </div>
+                <p className="text-xs text-white/30 px-2 mt-4">Loading chats...</p>
               ) : sessions.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-4 text-sm text-white/45">
-                  No chat sessions yet.
-                </div>
+                <p className="text-xs text-white/30 px-2">No past conversations.</p>
               ) : (
                 sessions.map((session) => (
                   <button
                     key={session.id}
                     onClick={() => loadSessionHistory(session.id)}
-                    className={`w-full rounded-2xl border px-4 py-3 text-left transition ${activeSessionId === session.id ? "border-blue-400/30 bg-blue-500/10" : "border-white/10 bg-white/5 hover:bg-white/10"}`}
+                    className={`w-full text-left truncate px-3 py-2 rounded-lg text-sm transition ${
+                      activeSessionId === session.id
+                        ? "bg-[#2f2f2f] text-white font-medium"
+                        : "text-white/60 hover:bg-white/5"
+                    }`}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="truncate text-sm font-medium text-white">{session.title || "New chat"}</p>
-                      {activeSessionId === session.id ? <span className="text-[10px] uppercase tracking-[0.18em] text-blue-200">Open</span> : null}
-                    </div>
-                    <p className="mt-1 text-xs text-white/35">
-                      {session.updated_at ? new Date(session.updated_at).toLocaleString() : "Recently updated"}
-                    </p>
+                    {session.title || "New chat"}
                   </button>
                 ))
               )}
             </div>
-          </div>
-        </section>
 
-        <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] backdrop-blur overflow-hidden flex flex-col min-h-[72vh]">
-          <div className="border-b border-white/10 px-6 py-5">
-            <p className="text-xs uppercase tracking-[0.22em] text-white/35">Conversation</p>
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-white">{sessions.find((session) => session.id === activeSessionId)?.title || "Talk to docs"}</h3>
-              {loadingHistory ? <span className="text-xs text-white/35">Loading history...</span> : null}
+            <div className="p-3 border-t border-white/5 mt-auto">
+              <Link to="/knowledge-base" className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/5 text-sm font-medium text-white/70 transition">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Workspace
+              </Link>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 bg-[#212121] relative h-full">
+        {/* Top Header */}
+        <div className="sticky top-0 left-0 p-3 z-10 flex items-center bg-[#212121]/95 text-white/70 backdrop-blur-md">
+          {!isSidebarOpen && (
+            <button
+              title="Open sidebar"
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 hover:bg-white/5 rounded-lg transition mr-2"
+            >
+              <PanelLeft className="h-5 w-5" />
+            </button>
+          )}
+          <div className="font-medium px-2 py-1 rounded-md text-sm">
+            {sessions.find((s) => s.id === activeSessionId)?.title || "NeuralDoc Chat"}
           </div>
+        </div>
 
-          <div className="flex-1 px-6 py-6 overflow-y-auto space-y-4">
-            {messages.length === 0 ? (
-              <div className="flex h-full min-h-[420px] items-center justify-center rounded-[1.75rem] border border-dashed border-white/10 bg-black/20 text-center">
-                <div className="max-w-md px-6">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-blue-300">
-                    <Sparkles className="h-6 w-6" />
-                  </div>
-                  <h2 className="text-xl font-semibold text-white">Ask anything about your documents</h2>
-                  <p className="mt-3 text-sm leading-7 text-white/45">
-                    Your answers will be grounded in the uploaded PDFs and displayed with sources.
-                  </p>
-                </div>
+        {/* Messages Stream */}
+        <div className="flex-1 overflow-y-auto w-full scroll-smooth">
+          {messages.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center text-center px-4 pb-20">
+              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-white/5 text-white/80 ring-1 ring-white/10">
+                <Sparkles className="h-8 w-8" />
               </div>
-            ) : null}
-
-            <AnimatePresence>
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div className={`max-w-[82%] rounded-3xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "bg-blue-600 text-white rounded-br-md" : "bg-white/[0.05] border border-white/10 text-white/85 rounded-bl-md"}`}>
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-
-                    {message.sources && message.sources.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2 border-t border-white/10 pt-3">
-                        {message.sources.map((source, index) => (
-                          <span key={index} className="inline-flex items-center gap-1 rounded-full border border-blue-400/20 bg-blue-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-blue-200">
-                            <FileText className="h-3 w-3" />
-                            {source}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {message.latency != null && (
-                      <div className="mt-2 flex items-center gap-1 text-[10px] text-white/35">
-                        <Clock className="h-3 w-3" />
-                        {(message.latency * 1000).toFixed(0)}ms
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-
-            {sending && (
-              <div className="flex justify-start">
-                <div className="rounded-3xl rounded-bl-md border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white/45">
-                  <Loader2 className="mr-2 inline h-4 w-4 animate-spin text-blue-300" />
-                  Thinking...
-                </div>
+              <h2 className="text-2xl font-semibold text-white mb-2">How can I help you today?</h2>
+              <div className="mt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 max-w-2xl w-full">
+                {["Summarize the key points", "Extract action items", "What are the main conclusions?"].map((suggestedPrompt, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setQuery(suggestedPrompt);
+                      setTimeout(() => inputRef.current?.focus(), 10);
+                    }}
+                    className="border border-white/10 bg-[#2f2f2f]/50 hover:bg-[#2f2f2f] rounded-xl px-4 py-3 text-sm text-left transition-colors text-white/70"
+                  >
+                    {suggestedPrompt}
+                  </button>
+                ))}
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+            </div>
+          ) : (
+            <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
+              <AnimatePresence>
+                {messages.map((message) => {
+                  const isSystemMsg = message.role === "assistant" && message.content.includes("No relevant information found");
+                  const isUser = message.role === "user";
 
-          <div className="border-t border-white/10 px-6 py-5">
-            <div className="rounded-[1.6rem] border border-white/10 bg-black/30 p-3">
+                  return (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
+                    >
+                      {isUser ? (
+                        <div className="max-w-[80%] lg:max-w-[70%] rounded-3xl bg-[#2f2f2f] px-5 py-3 text-[15px] leading-[1.6] text-white break-words">
+                          <p className="whitespace-pre-wrap">{message.content}</p>
+                        </div>
+                      ) : (
+                        <div className="max-w-full w-full flex items-start gap-4">
+                          <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10">
+                            <Sparkles className="h-4 w-4 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            {isSystemMsg ? (
+                              <div className="flex items-center gap-3 px-2 py-1 text-sm text-yellow-500/80">
+                                <span className="text-xl">⚠️</span>
+                                <span className="leading-[1.6]">{message.content}</span>
+                              </div>
+                            ) : (
+                              <div className="text-slate-200 text-[15px] leading-[1.65] tracking-[0.011em]">
+                                <p className="whitespace-pre-wrap [&_li]:mb-2 [&_ul]:pl-4 [&_ol]:pl-4 ai-response-text">
+                                  {message.content}
+                                </p>
+        
+                                {message.sources && message.sources.length > 0 && (
+                                  <div className="mt-4 flex flex-wrap gap-2">
+                                    {message.sources.map((source, index) => (
+                                      <span key={index} className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#2f2f2f]/60 px-2.5 py-1 text-xs text-white/70">
+                                        <FileText className="h-3 w-3" />
+                                        {source}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+        
+                            {message.latency != null && (
+                              <div className="mt-2 text-xs font-medium text-white/30">
+                                {(message.latency * 1000).toFixed(0)} ms
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+              {sending && (
+                <div className="flex items-center gap-4 text-white/50 pt-2">
+                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5">
+                     <Sparkles className="h-4 w-4" />
+                   </div>
+                   <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        {/* Dynamic Chat Input Bar */}
+        <div className="shrink-0 bg-transparent px-4 pb-6 pt-2">
+          <div className="mx-auto max-w-3xl">
+            <div className="relative flex flex-col rounded-[26px] bg-[#2f2f2f] focus-within:ring-1 focus-within:ring-white/20 p-2 shadow-sm transition">
               <textarea
                 ref={inputRef}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask a question about your docs..."
-                rows={3}
-                className="w-full resize-none bg-transparent px-1 py-2 text-sm text-white outline-none placeholder:text-white/30"
+                placeholder="Ask anything..."
+                rows={1}
+                className="max-h-32 min-h-[44px] w-full resize-none bg-transparent px-11 py-3 pr-12 text-[15px] text-white outline-none placeholder:text-white/40"
               />
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-white/35">Press Enter to send, Shift+Enter for a new line.</p>
-                <Button onClick={handleSend} disabled={sending || !query.trim()} className="gap-2 bg-white text-black hover:bg-white/90">
-                  <Send className="h-4 w-4" />
-                  Send
-                </Button>
-              </div>
+              
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                title="Upload PDF document"
+                className="absolute left-3 top-3 p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-colors flex items-center justify-center"
+              >
+                {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
+              </button>
+
+              <button
+                onClick={handleSend}
+                disabled={sending || !query.trim()}
+                className={`absolute right-3 top-3 p-1.5 rounded-full transition-colors flex items-center justify-center ${
+                  query.trim() ? "bg-white text-black hover:bg-white/90" : "bg-white/10 text-white/30"
+                }`}
+              >
+                <Send className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mt-2 text-center text-xs text-white/40">
+               Answers are grounded by your indexed document library. Upload explicitly here or in the Knowledge Base.
             </div>
           </div>
-        </section>
+        </div>
       </div>
-    </AppShell>
+    </div>
   );
 }

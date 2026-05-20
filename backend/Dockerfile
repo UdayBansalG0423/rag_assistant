@@ -1,24 +1,16 @@
 FROM python:3.11-slim-bookworm
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+COPY requirements-prod.txt ./
 
-COPY requirements-prod.txt .
-
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements-prod.txt && \
-    pip cache purge
-
-# REMOVE build tools after install
-RUN apt-get purge -y build-essential && \
-    apt-get autoremove -y
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install -r requirements-prod.txt
 
 COPY . .
 

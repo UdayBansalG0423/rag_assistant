@@ -29,7 +29,7 @@ type AuthResponse = {
    user_id: string;
    filename: string;
    storage_path: string;
-   status?: "processing" | "completed" | "failed";
+   status?: "queued" | "processing" | "completed" | "failed";
    progress?: number;
    error?: string;
    created_at?: string | null;
