@@ -8,6 +8,7 @@ from supabase import create_client
 
 from app.core.supabase_client import supabase_admin
 from app.core.queue import enqueue_task
+from app.utils.hash import generate_file_hash
 
 
 class DocumentService:
@@ -27,9 +28,26 @@ class DocumentService:
         if not filename.lower().endswith(".pdf"):
             raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
 
+        file_bytes = await file.read()
+
+        file_hash = generate_file_hash(file_bytes)
+
+        existing_doc = (
+            supabase_admin.table("documents")
+            .select("*")
+            .eq("file_hash", file_hash)
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+        if existing_doc.data:
+            raise HTTPException(
+                status_code=400,
+                detail="Document already uploaded"
+            )
+
         document_id = str(uuid.uuid4())
         storage_path = f"{user_id}/{document_id}.pdf"
-        file_bytes = await file.read()
 
         storage_client = create_client(self.supabase_url, self.service_key).storage
         storage_client.from_(self.bucket_name).upload(storage_path, file_bytes)
@@ -39,6 +57,7 @@ class DocumentService:
             "user_id": user_id,
             "file_name": file.filename,
             "storage_path": storage_path,
+            "file_hash": file_hash,
             "status": "processing",
             "progress": 0,
         }
