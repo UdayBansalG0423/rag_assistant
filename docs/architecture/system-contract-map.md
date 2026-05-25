@@ -95,7 +95,7 @@ Current state owners:
 
 - Auth context: `frontend/src/providers/AuthProvider.tsx`
 - Global UI chrome: `frontend/src/store/useAppStore.ts`
-- Chat thread state: `frontend/src/pages/Chat.tsx` and `frontend/src/components/chat/ChatArea.tsx`
+ - Chat thread state: `frontend/src/features/chat/` (store, hooks, components)
 - Upload progress polling: `frontend/src/hooks/use-document-polling.ts`
 - Token persistence: `frontend/src/lib/auth.ts`
 
@@ -159,8 +159,7 @@ Relevant frontend structure today:
 
 Important structural note:
 
-- There are two chat implementations in the repo: `pages/Chat.tsx` and `components/chat/*`.
-- That split is a major source of contract drift and UX inconsistency.
+- Chat implementation is consolidated under `frontend/src/features/chat/*` (preferred single source of truth).
 
 ## 5. Current Response Shapes
 
