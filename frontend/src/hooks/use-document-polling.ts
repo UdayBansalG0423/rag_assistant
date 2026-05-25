@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getDocuments } from "@/lib/api";
 import type { DocumentRecord } from "@/lib/api";
 
@@ -23,25 +23,42 @@ export function useDocumentPolling({
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isFetching, setIsFetching] = useState(false);
   const pollTimeoutRef = useRef<NodeJS.Timeout>();
+  const mountedRef = useRef(true);
+  const docsRef = useRef<DocumentRecord[]>([]);
 
-  const fetchDocuments = async () => {
+  const hasProcessing = useCallback((docs?: DocumentRecord[]) => {
+    const toCheck = docs ?? docsRef.current;
+    return toCheck.some(doc => doc.status === "queued" || doc.status === "processing");
+  }, []);
+
+  const fetchDocuments = useCallback(async () => {
     try {
+      setIsFetching(true);
       const response = await getDocuments();
-      setDocuments(response.documents || []);
+      const docs = response.documents || [];
+      docsRef.current = docs;
+      setDocuments(docs);
       setError(null);
+      setRetryCount(0);
+      return docs;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch documents");
+      const message = err instanceof Error ? err.message : "Failed to fetch documents";
+      setError(message);
+      setRetryCount((count) => count + 1);
+      return null;
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+        setIsFetching(false);
+      }
     }
-  };
-
-  const hasProcessing = () => {
-    return documents.some(doc => doc.status === "queued" || doc.status === "processing");
-  };
+  }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     if (!enabled) {
       if (pollTimeoutRef.current) {
         clearTimeout(pollTimeoutRef.current);
@@ -49,41 +66,55 @@ export function useDocumentPolling({
       return;
     }
 
-    // Initial fetch
-    fetchDocuments();
+    let cancelled = false;
 
-    // Setup polling
-    const poll = () => {
-      fetchDocuments().then(() => {
-        // Check if we should stop polling
-        if (stopWhenComplete && !hasProcessing()) {
-          return; // Stop polling
+    const scheduleNextPoll = (docs: DocumentRecord[]) => {
+      if (cancelled) return;
+      if (stopWhenComplete && !hasProcessing(docs)) {
+        return;
+      }
+
+      pollTimeoutRef.current = setTimeout(async () => {
+        const newDocs = await fetchDocuments();
+        if (newDocs !== null) {
+          scheduleNextPoll(newDocs);
         }
-
-        // Schedule next poll
-        pollTimeoutRef.current = setTimeout(poll, pollInterval);
-      });
+      }, pollInterval);
     };
 
-    // Start polling after initial fetch
-    pollTimeoutRef.current = setTimeout(poll, pollInterval);
+    void fetchDocuments().then((docs) => {
+      if (docs !== null) {
+        scheduleNextPoll(docs);
+      }
+    });
 
     return () => {
+      cancelled = true;
+      mountedRef.current = false;
       if (pollTimeoutRef.current) {
         clearTimeout(pollTimeoutRef.current);
       }
     };
-  }, [enabled, pollInterval, stopWhenComplete]);
+  }, [enabled, pollInterval, stopWhenComplete, fetchDocuments, hasProcessing]);
 
   const refresh = async () => {
     await fetchDocuments();
   };
+
+  const retry = async () => {
+    await fetchDocuments();
+  };
+
+  const polling = isFetching;
 
   return {
     documents,
     loading,
     error,
     refresh,
-    hasProcessing: hasProcessing(),
+    retry,
+    hasProcessing: hasProcessing(documents),
+    polling,
+    retryCount,
   };
 }

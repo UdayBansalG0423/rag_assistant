@@ -1,6 +1,6 @@
 import { useRef, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { FileText, Loader2, RefreshCw, Upload, DatabaseZap } from "lucide-react";
+import { FileText, Loader2, RefreshCw, Upload, DatabaseZap, RotateCcw } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import UploadProgress from "@/components/UploadProgress";
@@ -14,7 +14,7 @@ export default function KnowledgeBase() {
   const [search, setSearch] = useState("");
 
   // Use polling hook to automatically update documents
-  const { documents, loading, refresh, hasProcessing } = useDocumentPolling({
+  const { documents, loading, error, refresh, retry, hasProcessing, polling } = useDocumentPolling({
     pollInterval: 2000, // Poll every 2 seconds
     enabled: true,
     stopWhenComplete: false, // Keep polling even after completion
@@ -57,8 +57,8 @@ export default function KnowledgeBase() {
             Upload
           </Button>
           <Button variant="outline" className="gap-2 border-white/10 bg-white/5 text-white/75 hover:bg-white/10" onClick={refresh}>
-            <RefreshCw className={`h-4 w-4 ${hasProcessing ? 'animate-spin' : ''}`} />
-            {hasProcessing ? "Polling..." : "Refresh"}
+            <RefreshCw className={`h-4 w-4 ${polling ? 'animate-spin' : ''}`} />
+            {polling ? "Polling..." : "Refresh"}
           </Button>
         </div>
       }
@@ -75,7 +75,7 @@ export default function KnowledgeBase() {
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-white/35">Processing status</p>
               <div className="mt-2 flex items-center gap-2 text-white">
-                {hasProcessing ? (
+                {polling ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
                     <span>Processing documents...</span>
@@ -93,9 +93,19 @@ export default function KnowledgeBase() {
               <div className="mt-2 text-white">{documents.length} files</div>
             </div>
           </div>
+          {error ? (
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+              <span>{error}</span>
+              <button type="button" onClick={retry} className="inline-flex items-center gap-2 rounded-lg border border-red-400/20 px-3 py-1.5 text-xs font-medium transition hover:bg-red-500/15">
+                <RotateCcw className="h-3.5 w-3.5" />
+                Retry
+              </button>
+            </div>
+          ) : null}
+
           {activeDocumentId ? (
             <div className="mt-4 rounded-2xl bg-black/10 p-3">
-              <UploadProgress documentId={activeDocumentId} />
+              <UploadProgress documentId={activeDocumentId} onRetry={refresh} />
             </div>
           ) : null}
         </section>
@@ -118,8 +128,14 @@ export default function KnowledgeBase() {
 
           <div className="mt-4">
             {loading ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-6 text-sm text-white/45">
-                Loading documents...
+              <div className="space-y-3 rounded-2xl border border-dashed border-white/10 bg-black/20 p-6 text-sm text-white/45">
+                <div className="flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Loading documents...</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
+                  <div className="h-full w-1/2 animate-pulse rounded-full bg-white/10" />
+                </div>
               </div>
             ) : filteredDocuments.length === 0 ? (
               <div className="rounded-2xl bg-black/10 p-4 text-sm text-white/45">

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { X, Search, Upload, FileText, Filter, ChevronDown, MoreHorizontal, Eye } from 'lucide-react'
+import { Loader2, X, Search, Upload, FileText, Filter, ChevronDown, MoreHorizontal, Eye } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { cn } from '@/utils/cn'
@@ -22,7 +22,7 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
   const [uploadError, setUploadError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
-  const { documents, loading, error, refresh, hasProcessing } = useDocumentPolling({
+  const { documents, loading, error, refresh, retry, hasProcessing, polling } = useDocumentPolling({
     enabled: isOpen,
     pollInterval: 2000,
     stopWhenComplete: false,
@@ -115,6 +115,19 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
                 </div>
               )}
 
+              {error && (
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                  <span>{error}</span>
+                  <button
+                    type="button"
+                    onClick={retry}
+                    className="rounded-md border border-red-400/20 px-2 py-1 text-xs font-medium text-red-100 transition hover:bg-red-500/15"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+
               {/* Tabs */}
               <div className="flex gap-4 mt-4">
                 <button
@@ -165,6 +178,12 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
                   <ChevronDown size={14} />
                 </button>
               </div>
+              {polling ? (
+                <div className="mt-3 flex items-center gap-2 text-xs text-text-muted">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Polling document status...</span>
+                </div>
+              ) : null}
             </div>
 
             {/* Document List */}

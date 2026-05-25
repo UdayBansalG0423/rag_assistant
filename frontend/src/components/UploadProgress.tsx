@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { RotateCcw } from 'lucide-react'
 import { getStoredToken } from '@/lib/auth'
 import { apiUrl } from '@/lib/api'
 
@@ -20,7 +21,7 @@ const STATUS_LABELS: Record<string, string> = {
   failed: 'Failed.',
 }
 
-export default function UploadProgress({ documentId }: { documentId: string }) {
+export default function UploadProgress({ documentId, onRetry }: { documentId: string; onRetry?: () => void }) {
   const [status, setStatus] = useState<Status | null>(null)
 
   useEffect(() => {
@@ -96,10 +97,34 @@ export default function UploadProgress({ documentId }: { documentId: string }) {
     }
   }, [documentId])
 
-  if (!status) return <div>Extracting pages...</div>
+  if (!status) return <div className="text-sm text-white/60">Extracting pages...</div>
 
-  if (status.status === 'not_found') return <div>No progress found for this document.</div>
-  if (status.status === 'error') return <div>Error: {status.error}</div>
+  if (status.status === 'not_found') {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/65">
+        <span>No progress found for this document.</span>
+        {onRetry ? (
+          <button type="button" onClick={onRetry} className="inline-flex items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-xs text-white/80 transition hover:bg-white/5">
+            <RotateCcw className="h-3 w-3" />
+            Retry
+          </button>
+        ) : null}
+      </div>
+    )
+  }
+  if (status.status === 'error') {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+        <span>Error: {status.error}</span>
+        {onRetry ? (
+          <button type="button" onClick={onRetry} className="inline-flex items-center gap-1 rounded-md border border-red-400/30 px-2 py-1 text-xs text-red-100 transition hover:bg-red-500/15">
+            <RotateCcw className="h-3 w-3" />
+            Retry
+          </button>
+        ) : null}
+      </div>
+    )
+  }
 
   const processed = status.last_index ?? (status.last_processed_chunk != null ? status.last_processed_chunk + 1 : 0)
   const pct = status.progress ?? (status.total ? Math.round((processed / status.total) * 100) : 0)

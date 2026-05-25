@@ -12,10 +12,19 @@ export function useMessages(sessionId?: string) {
     queryKey: ['messages', sessionId],
     queryFn: async () => {
       if (!sessionId) return []
-      const res = await getChatHistory(sessionId)
-      return res.messages ?? []
+      try {
+        const res = await getChatHistory(sessionId)
+        return res.messages ?? []
+      } catch (err) {
+        const message = err instanceof Error ? err.message.toLowerCase() : ''
+        if (message.includes('chat session not found') || message.includes('request failed (404)')) {
+          return []
+        }
+        throw err
+      }
     },
     enabled: !!sessionId,
+    retry: false,
   })
 
   useEffect(() => {

@@ -30,6 +30,25 @@ class ChatService:
 
         raise HTTPException(status_code=500, detail="Unexpected chat service error")
 
+    @staticmethod
+    def _fetch_session_or_404(user_id: str, session_id: str):
+        try:
+            response = (
+                supabase_admin.table("chat_sessions")
+                .select("*")
+                .eq("id", session_id)
+                .eq("user_id", user_id)
+                .execute()
+            )
+        except Exception as exc:
+            ChatService._raise_if_schema_missing(exc)
+
+        session = (response.data or [])[:1]
+        if not session:
+            raise HTTPException(status_code=404, detail="Chat session not found")
+
+        return session[0]
+
     def create_session(self, user_id: str, title: str | None = None):
         session_id = str(uuid.uuid4())
         session_title = (title or "New chat").strip() or "New chat"
@@ -62,20 +81,7 @@ class ChatService:
         return response.data or []
 
     def delete_session(self, user_id: str, session_id: str):
-        try:
-            session_response = (
-                supabase_admin.table("chat_sessions")
-                .select("id")
-                .eq("id", session_id)
-                .eq("user_id", user_id)
-                .single()
-                .execute()
-            )
-        except Exception as exc:
-            self._raise_if_schema_missing(exc)
-
-        if not session_response.data:
-            raise HTTPException(status_code=404, detail="Chat session not found")
+        self._fetch_session_or_404(user_id, session_id)
 
         try:
             supabase_admin.table("chat_sessions").delete().eq("id", session_id).eq("user_id", user_id).execute()
@@ -94,21 +100,7 @@ class ChatService:
         latency: float | None = None,
         title: str | None = None,
     ):
-        try:
-            session_response = (
-                supabase_admin.table("chat_sessions")
-                .select("*")
-                .eq("id", session_id)
-                .eq("user_id", user_id)
-                .single()
-                .execute()
-            )
-        except Exception as exc:
-            self._raise_if_schema_missing(exc)
-
-        session = session_response.data
-        if not session:
-            raise HTTPException(status_code=404, detail="Chat session not found")
+        session = self._fetch_session_or_404(user_id, session_id)
 
         now = datetime.utcnow().isoformat()
         session_title = session.get("title") or "New chat"
@@ -142,20 +134,7 @@ class ChatService:
         return record
 
     def load_history(self, user_id: str, session_id: str):
-        try:
-            session_response = (
-                supabase_admin.table("chat_sessions")
-                .select("*")
-                .eq("id", session_id)
-                .eq("user_id", user_id)
-                .single()
-                .execute()
-            )
-        except Exception as exc:
-            self._raise_if_schema_missing(exc)
-        session = session_response.data
-        if not session:
-            raise HTTPException(status_code=404, detail="Chat session not found")
+        session = self._fetch_session_or_404(user_id, session_id)
 
         try:
             response = (
