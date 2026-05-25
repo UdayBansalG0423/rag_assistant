@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { useChat } from "../hooks/useChat";
+import { useSendMessage } from "../hooks/useSendMessage";
 import MessageBubble from "./MessageBubble";
 import EmptyState from "./EmptyState";
 import { useMessages } from "../hooks/useMessages";
@@ -10,6 +11,7 @@ import { getDocuments } from '@/lib/api'
 export default function ChatThread() {
   const { id } = useParams()
   const { messages, sessionId } = useChat(id ?? null)
+  const { retryLastFailedTurn } = useSendMessage()
   useMessages(id)
 
   const { data: documentsData } = useQuery({
@@ -35,7 +37,14 @@ export default function ChatThread() {
       {messages.length === 0 ? (
         <EmptyState />
       ) : (
-        messages.map((m) => <MessageBubble key={m.id} message={m} documentMap={documentMap} />)
+        messages.map((m) => (
+          <MessageBubble
+            key={m.id}
+            message={m}
+            documentMap={documentMap}
+            onRetry={m.status === 'error' ? retryLastFailedTurn : undefined}
+          />
+        ))
       )}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-bg-base to-transparent" />
     </main>

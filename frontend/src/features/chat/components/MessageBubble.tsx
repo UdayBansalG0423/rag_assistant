@@ -44,9 +44,11 @@ function PendingBubble({ startedAt }: { startedAt: string }) {
 export default function MessageBubble({
   message,
   documentMap,
+  onRetry,
 }: {
   message: ChatMessage
   documentMap?: Map<string, string>
+  onRetry?: () => void
 }) {
 
   if (message.role === 'user') {
@@ -69,9 +71,18 @@ export default function MessageBubble({
         <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border-accent bg-accent-glow text-xs text-text-primary">
           ◈
         </div>
-        <div className="flex max-w-[72%] items-center gap-2 rounded-xl border border-status-error/25 bg-status-error/10 px-3 py-2 text-sm text-status-error">
+        <div className="flex max-w-[72%] items-center gap-3 rounded-xl border border-status-error/25 bg-status-error/10 px-3 py-2 text-sm text-status-error">
           <AlertCircle size={14} />
           <span>Something went wrong. Try sending again.</span>
+          {onRetry ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="rounded-md border border-status-error/30 bg-status-error/15 px-2 py-1 text-[11px] font-medium text-status-error transition hover:bg-status-error/25"
+            >
+              Retry
+            </button>
+          ) : null}
         </div>
       </div>
     )

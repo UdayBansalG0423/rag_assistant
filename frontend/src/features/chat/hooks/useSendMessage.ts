@@ -10,6 +10,7 @@ export function useSendMessage() {
   const addMessage = useChatStore((s) => s.appendMessage)
   const updateMessage = useChatStore((s) => s.updateMessage)
   const setMessages = useChatStore((s) => s.setMessages)
+  const removeMessage = useChatStore((s) => s.removeMessage)
   const setActiveSession = useChatStore((s) => s.setActiveSession)
   const sessionId = useChatStore((s) => s.activeSessionId)
   const setSendStatus = useChatStore((s) => s.setSendStatus)
@@ -21,23 +22,22 @@ export function useSendMessage() {
       setSendStatus('sending')
 
       let currentSessionId = sessionId
-      if (!currentSessionId) {
-        const session = await createChatSession()
-        currentSessionId = session.id
-        setActiveSession(currentSessionId)
-      }
-
-      const userMsg = createOptimisticUserMessage(content)
-      addMessage(userMsg)
-
-      const pending = createPendingAssistantMessage()
-      addMessage(pending)
-
-      if (currentSessionId && currentSessionId !== sessionId) {
-        navigate(`/workspace/${currentSessionId}`, { replace: true })
-      }
-
+      let pendingMessageId: string | null = null
       try {
+        if (!currentSessionId) {
+          const session = await createChatSession()
+          currentSessionId = session.id
+          setActiveSession(currentSessionId)
+          navigate(`/workspace/${currentSessionId}`, { replace: true })
+        }
+
+        const userMsg = createOptimisticUserMessage(content)
+        addMessage(userMsg, currentSessionId)
+
+        const pending = createPendingAssistantMessage()
+        pendingMessageId = pending.id
+        addMessage(pending, currentSessionId)
+
         const raw = await askQuery(content)
 
         updateMessage(pending.id, {
@@ -45,7 +45,7 @@ export function useSendMessage() {
           sources: raw.sources,
           latency: raw.latency,
           status: 'sent',
-        })
+        }, currentSessionId)
 
         const savedTurn = await saveChatMessage({
           session_id: currentSessionId!,
@@ -86,7 +86,9 @@ export function useSendMessage() {
 
         qc.invalidateQueries({ queryKey: ['sessions'] })
       } catch (err) {
-        updateMessage(pending.id, { status: 'error', content: handleError(err) })
+        if (pendingMessageId && currentSessionId) {
+          updateMessage(pendingMessageId, { status: 'error', content: handleError(err) }, currentSessionId)
+        }
       } finally {
         setSendStatus('idle')
       }
@@ -94,5 +96,21 @@ export function useSendMessage() {
     [addMessage, updateMessage, sessionId, setActiveSession, navigate, qc, setSendStatus],
   )
 
-  return { send }
+  const retryLastFailedTurn = useCallback(() => {
+    const currentSessionId = useChatStore.getState().activeSessionId
+    if (!currentSessionId) return
+
+    const messages = useChatStore.getState().messages[currentSessionId] ?? []
+    const lastMessage = messages[messages.length - 1]
+    const priorMessage = messages[messages.length - 2]
+
+    if (!lastMessage || lastMessage.status !== 'error' || lastMessage.role !== 'assistant') return
+    if (!priorMessage || priorMessage.role !== 'user') return
+
+    removeMessage(lastMessage.id, currentSessionId)
+    removeMessage(priorMessage.id, currentSessionId)
+    void send(priorMessage.content)
+  }, [removeMessage, send])
+
+  return { send, retryLastFailedTurn }
 }
