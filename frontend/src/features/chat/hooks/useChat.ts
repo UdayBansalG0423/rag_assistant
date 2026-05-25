@@ -1,14 +1,15 @@
 import { useMemo } from "react";
 import { useChatStore } from "../store/useChatStore";
 
-export function useChat() {
+export function useChat(sessionId?: string | null) {
   const messagesBySession = useChatStore((s) => s.messages);
-  const sessionId = useChatStore((s) => s.activeSessionId);
+  const storeSessionId = useChatStore((s) => s.activeSessionId);
+  const activeSessionId = sessionId ?? storeSessionId;
 
   const ordered = useMemo(() => {
-    const messages = sessionId ? messagesBySession[sessionId] ?? [] : [];
+    const messages = activeSessionId ? messagesBySession[activeSessionId] ?? [] : [];
     return [...messages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  }, [messagesBySession, sessionId]);
+  }, [messagesBySession, activeSessionId]);
 
-  return { messages: ordered, sessionId };
+  return { messages: ordered, sessionId: activeSessionId };
 }

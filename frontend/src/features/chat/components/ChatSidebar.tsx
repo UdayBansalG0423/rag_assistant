@@ -1,14 +1,13 @@
 import { Plus, RefreshCw } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useSessions } from '../hooks/useSessions'
 import { useChatStore } from '../store/useChatStore'
 import SessionItem from './SessionItem'
 
 export default function ChatSidebar() {
   const { sessionsQuery, createMutation, deleteMutation } = useSessions()
-  const setActiveSession = useChatStore((s) => s.setActiveSession)
   const clearMessages = useChatStore((s) => s.clearMessages)
-  const currentSessionId = useChatStore((s) => s.activeSessionId)
+  const { id: routeSessionId } = useParams()
   const navigate = useNavigate()
 
   const sessions = (sessionsQuery.data ?? []) as any[]
@@ -30,7 +29,6 @@ export default function ChatSidebar() {
         type="button"
         onClick={() => {
           void createMutation.mutateAsync().then((session) => {
-            setActiveSession(session.id)
             navigate(`/workspace/${session.id}`)
           })
         }}
@@ -46,22 +44,20 @@ export default function ChatSidebar() {
 
       <div className="flex-1 space-y-1 overflow-y-auto px-2 pb-3">
         {sessions.map((s: any) => {
-          const active = s.id === currentSessionId
+          const active = s.id === routeSessionId
           return (
             <SessionItem
               key={s.id}
               session={s}
               isActive={active}
               onClick={() => {
-                setActiveSession(s.id)
                 navigate(`/workspace/${s.id}`)
               }}
               onDelete={() => {
-                const shouldResetWorkspace = currentSessionId === s.id
+                const shouldResetWorkspace = routeSessionId === s.id
                 void deleteMutation.mutateAsync(s.id).then(() => {
                   clearMessages(s.id)
                   if (shouldResetWorkspace) {
-                    setActiveSession(null)
                     navigate('/workspace', { replace: true })
                   }
                 })

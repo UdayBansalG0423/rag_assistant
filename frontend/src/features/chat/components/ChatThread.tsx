@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useParams } from 'react-router-dom'
 import { useChat } from "../hooks/useChat";
 import MessageBubble from "./MessageBubble";
 import EmptyState from "./EmptyState";
@@ -7,8 +8,9 @@ import { useMessages } from "../hooks/useMessages";
 import { getDocuments } from '@/lib/api'
 
 export default function ChatThread() {
-  const { messages, sessionId } = useChat()
-  useMessages(sessionId ?? undefined)
+  const { id } = useParams()
+  const { messages, sessionId } = useChat(id ?? null)
+  useMessages(id)
 
   const { data: documentsData } = useQuery({
     queryKey: ['documents'],
