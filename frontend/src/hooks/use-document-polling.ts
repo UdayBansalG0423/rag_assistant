@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getDocuments } from "@/lib/api";
 import type { DocumentRecord } from "@/lib/api";
+import { normalizeError } from "@/shared/lib/error-handler";
 
 interface UseDocumentPollingOptions {
   /** Poll interval in milliseconds (default: 2000ms) */
@@ -45,10 +46,10 @@ export function useDocumentPolling({
       setRetryCount(0);
       return docs;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to fetch documents";
-      setError(message);
+      const normalized = normalizeError(err, { context: "polling" });
+      setError(normalized.message);
       setRetryCount((count) => count + 1);
-      return null;
+      return docsRef.current;
     } finally {
       if (mountedRef.current) {
         setLoading(false);

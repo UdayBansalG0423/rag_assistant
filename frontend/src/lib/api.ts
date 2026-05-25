@@ -2,6 +2,7 @@ import {
   clearStoredToken,
   getStoredToken,
 } from "./auth";
+import { normalizeError } from "@/shared/lib/error-handler";
 
 const apiBaseUrl = (() => {
   const configured = import.meta.env.VITE_BACKEND_URL?.trim();
@@ -71,29 +72,38 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(apiUrl(url), {
-    ...options,
-    headers,
-  });
+  try {
+    const res = await fetch(apiUrl(url), {
+      ...options,
+      headers,
+    });
 
-  if (res.status === 401) {
-    clearStoredToken();
-    window.location.href = "/login";
-    throw new Error("Session expired — redirecting to login.");
-  }
-
-  if (!res.ok) {
-    const body = await res.text();
-    try {
-      const parsed = body ? JSON.parse(body) : null;
-      const message = parsed?.detail || parsed?.message || body;
-      throw new Error(message || `Request failed (${res.status})`);
-    } catch {
-      throw new Error(body || `Request failed (${res.status})`);
+    if (res.status === 401) {
+      clearStoredToken();
+      window.location.href = "/login";
+      throw new Error("Session expired — redirecting to login.");
     }
-  }
 
-  return res.json() as Promise<T>;
+    if (!res.ok) {
+      const body = await res.text();
+      let message = body || `Request failed (${res.status})`;
+
+      try {
+        const parsed = body ? JSON.parse(body) : null;
+        message = parsed?.detail || parsed?.message || message;
+      } catch {
+        // Keep the text body when JSON parsing fails.
+      }
+
+      const normalized = normalizeError({ message, status: res.status }, { context: "generic" });
+      throw new Error(normalized.message);
+    }
+
+    return res.json() as Promise<T>;
+  } catch (err) {
+    const normalized = normalizeError(err, { context: "generic" });
+    throw new Error(normalized.message);
+  }
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
