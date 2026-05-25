@@ -34,7 +34,7 @@
 
 ## 📌 Overview
 
-NeuralDoc AI is a production-oriented Retrieval-Augmented Generation (RAG) platform that enables users to upload documents and interact with them using Large Language Models (LLMs). Unlike experimental RAG prototypes, NeuralDoc is built with enterprise engineering patterns for scalability, reliability, and multi-tenant isolation.
+NeuralDoc AI is a production-oriented Retrieval-Augmented Generation (RAG) platform that enables users to upload documents and interact with them using Large Language Models (LLMs). The frontend features a Landing Page, secure Authentication, Dashboard for document management, Document Vault for indexing, and a Chat Workspace with real-time session management, source citations, and latency tracking. Unlike experimental RAG prototypes, NeuralDoc is built with enterprise engineering patterns for scalability, reliability, and multi-tenant isolation.
 
 **Why NeuralDoc?** Modern AI document systems require more than semantic search—they demand fault-tolerant async pipelines, user-scoped data isolation, comprehensive monitoring, and containerized infrastructure.
 
@@ -130,8 +130,6 @@ NeuralDoc AI is a production-oriented Retrieval-Augmented Generation (RAG) platf
 
 ### Document Ingestion Pipeline
 
-![Ingestion Flow](docs/architecture/Load.png)
-
 ```
 1. Upload PDF
    ↓
@@ -152,7 +150,6 @@ NeuralDoc AI is a production-oriented Retrieval-Augmented Generation (RAG) platf
 
 ### Query & RAG Flow
 
-![Query Flow](docs/architecture/ask.png)
 
 ```
 1. User asks question in chat
@@ -201,20 +198,20 @@ updated_at    TIMESTAMP
 
 ## 📊 Application Screenshots
 
+### Landing Page
+![Landing Page](docs/screenshots/landingpage.png)
+Marketing-focused entry point with product positioning and sign-in access.
+
 ### Dashboard
 ![Dashboard](docs/screenshots/dashboard.png)
 Central hub showing document statistics, recent activity, and quick actions.
 
-### Knowledge Base
-![Knowledge Base](docs/screenshots/knowledgebase.png)
-Organized document library with search, filtering, and status monitoring.
-
-### Chat Workspace
-![Chat Workspace](docs/screenshots/chatworkspace.png)
-Interactive RAG chat interface with context awareness and citation support.
+### Document Vault
+![Document Vault](docs/screenshots/documentvault.png)
+Read-only modal for browsing indexed documents, upload progress, and indexing status.
 
 ### Authentication
-![Login](docs/screenshots/login.png)
+![Authentication](docs/screenshots/login.png)
 Secure JWT-based login/signup flow with password validation.
 
 ### Processing Status
@@ -272,12 +269,14 @@ Real-time indexing progress with stage-by-stage tracking (extraction → chunkin
 NeuralDoc/
 ├── frontend/                    # React + Vite SPA
 │   ├── src/
-│   │   ├── pages/              # Route pages (Dashboard, Chat, KnowledgeBase)
-│   │   ├── components/         # Reusable React components
-│   │   ├── hooks/              # Custom hooks (use-auth, use-document-polling)
+│   │   ├── pages/              # Route pages (Landing, Dashboard, Settings)
+│   │   ├── features/           # Feature modules (chat, documents, auth)
+│   │   ├── components/         # Reusable UI components
+│   │   ├── hooks/              # Custom hooks (use-auth, useChat, useSessions)
 │   │   ├── lib/                # Utilities (API client, auth helpers)
-│   │   ├── providers/          # Context providers (AuthProvider)
-│   │   └── services/           # API service layer
+│   │   ├── providers/          # Context providers
+│   │   ├── store/              # State management (Zustand)
+│   │   └── services/           # API integration
 │   ├── public/                 # Static assets
 │   ├── package.json
 │   ├── tsconfig.json
@@ -587,10 +586,11 @@ Auto-generated API docs available at: `http://localhost:8000/docs`
 - `DELETE /api/documents/{id}` - Delete document
 
 #### Chat
-- `GET /api/chat/sessions` - List chat sessions
-- `POST /api/chat/sessions` - Create session
-- `POST /api/chat/sessions/{id}/messages` - Send message
-- `GET /api/chat/sessions/{id}/messages` - Get conversation history
+- `POST /chat/session` - Create new chat session
+- `GET /chat/sessions` - List user chat sessions
+- `POST /chat/message` - Save chat message with LLM response
+- `GET /chat/{session_id}` - Load chat history for session
+- `DELETE /chat/session/{session_id}` - Delete chat session and associated messages
 
 #### Health
 - `GET /health` - Service health status
