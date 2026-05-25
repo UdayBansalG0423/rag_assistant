@@ -1,6 +1,6 @@
 import { useRef, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { FileText, Loader2, RefreshCw, Upload, DatabaseZap, Trash2 } from "lucide-react";
+import { FileText, Loader2, RefreshCw, Upload, DatabaseZap } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import UploadProgress from "@/components/UploadProgress";
@@ -10,12 +10,11 @@ import { DocumentStatusDisplay } from "@/components/DocumentStatusDisplay";
 
 export default function KnowledgeBase() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   // Use polling hook to automatically update documents
-  const { documents, loading, error, refresh, hasProcessing } = useDocumentPolling({
+  const { documents, loading, refresh, hasProcessing } = useDocumentPolling({
     pollInterval: 2000, // Poll every 2 seconds
     enabled: true,
     stopWhenComplete: false, // Keep polling even after completion
@@ -34,7 +33,6 @@ export default function KnowledgeBase() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
     try {
       const response = await uploadPdf(file);
       setActiveDocumentId(response.id);
@@ -43,7 +41,6 @@ export default function KnowledgeBase() {
     } catch (error: any) {
       toast.error(error.message || "Upload failed");
     } finally {
-      setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
     }
   };

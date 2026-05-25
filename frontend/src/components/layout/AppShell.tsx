@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
 	BookOpen,
@@ -19,7 +19,7 @@ import { useAuth } from "@/hooks/use-auth";
 const navigation = [
 	{ label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
 	{ label: "Knowledge Base", to: "/knowledge-base", icon: BookOpen },
-	{ label: "Chat Workspace", to: "/chat", icon: MessagesSquare },
+	{ label: "Chat Workspace", to: "/workspace", icon: MessagesSquare },
 	{ label: "Profile", to: "/profile", icon: UserRound },
 	{ label: "Settings", to: "/settings", icon: Settings },
 ];

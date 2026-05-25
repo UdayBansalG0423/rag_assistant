@@ -61,6 +61,29 @@ class ChatService:
             self._raise_if_schema_missing(exc)
         return response.data or []
 
+    def delete_session(self, user_id: str, session_id: str):
+        try:
+            session_response = (
+                supabase_admin.table("chat_sessions")
+                .select("id")
+                .eq("id", session_id)
+                .eq("user_id", user_id)
+                .single()
+                .execute()
+            )
+        except Exception as exc:
+            self._raise_if_schema_missing(exc)
+
+        if not session_response.data:
+            raise HTTPException(status_code=404, detail="Chat session not found")
+
+        try:
+            supabase_admin.table("chat_sessions").delete().eq("id", session_id).eq("user_id", user_id).execute()
+        except Exception as exc:
+            self._raise_if_schema_missing(exc)
+
+        return {"message": "Chat session deleted", "id": session_id}
+
     def save_message(
         self,
         user_id: str,

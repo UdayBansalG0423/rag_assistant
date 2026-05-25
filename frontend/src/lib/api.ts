@@ -1,9 +1,18 @@
 import {
   clearStoredToken,
   getStoredToken,
-  setStoredRefreshToken,
-  setStoredUserId,
 } from "./auth";
+
+const apiBaseUrl = (() => {
+  const configured = import.meta.env.VITE_BACKEND_URL?.trim();
+  if (configured) return configured.replace(/\/$/, "");
+  return import.meta.env.DEV ? "http://localhost:8000" : "";
+})();
+
+export function apiUrl(path: string) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return apiBaseUrl ? `${apiBaseUrl}${normalizedPath}` : normalizedPath;
+}
 
 type SignUpCredentials = {
   name: string;
@@ -24,16 +33,18 @@ type AuthResponse = {
   token_type: string;
 };
 
- type DocumentRecord = {
-   id: string;
-   user_id: string;
-   filename: string;
-   storage_path: string;
-   status?: "queued" | "processing" | "completed" | "failed";
-   progress?: number;
-   error?: string;
-   created_at?: string | null;
- };
+export type DocumentRecord = {
+  id: string;
+  user_id: string;
+  file_name?: string;
+  filename: string;
+  name?: string;
+  storage_path: string;
+  status?: "queued" | "processing" | "completed" | "failed";
+  progress?: number;
+  error?: string;
+  created_at?: string | null;
+};
 
 type ChatSessionRecord = {
   id: string;
@@ -60,7 +71,7 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     ...options,
     headers,
   });
@@ -73,7 +84,13 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(body || `Request failed (${res.status})`);
+    try {
+      const parsed = body ? JSON.parse(body) : null;
+      const message = parsed?.detail || parsed?.message || body;
+      throw new Error(message || `Request failed (${res.status})`);
+    } catch {
+      throw new Error(body || `Request failed (${res.status})`);
+    }
   }
 
   return res.json() as Promise<T>;
@@ -165,6 +182,14 @@ export async function createChatSession(): Promise<ChatSessionRecord> {
 export async function getChatSessions(): Promise<{ sessions: ChatSessionRecord[] }> {
   const headers = await getAuthHeaders();
   return request('/chat/sessions', { headers });
+}
+
+export async function deleteChatSession(sessionId: string): Promise<{ message: string; id: string }> {
+  const headers = await getAuthHeaders();
+  return request(`/chat/session/${sessionId}`, {
+    method: 'DELETE',
+    headers,
+  });
 }
 
 export async function saveChatMessage(payload: {

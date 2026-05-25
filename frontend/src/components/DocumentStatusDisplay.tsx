@@ -1,5 +1,4 @@
-import React from "react";
-import { AlertCircle, CheckCircle2, Loader2, RotateCcw } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DocumentStatusDisplayProps {
@@ -18,7 +17,6 @@ interface DocumentStatusDisplayProps {
  */
 export function DocumentStatusDisplay({
   status = "processing",
-  progress = 0,
   error,
   onRetry,
 }: DocumentStatusDisplayProps) {

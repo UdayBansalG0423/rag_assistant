@@ -25,6 +25,14 @@ def list_sessions(current_user=Depends(get_current_user_from_credentials)):
     return {"sessions": chat_service.list_sessions(current_user.id)}
 
 
+@router.delete("/session/{session_id}")
+def delete_session(
+    session_id: str,
+    current_user=Depends(get_current_user_from_credentials),
+):
+    return chat_service.delete_session(current_user.id, session_id)
+
+
 @router.post("/message", response_model=SaveChatMessageResponse)
 def save_message(
     request: SaveChatMessageRequest,

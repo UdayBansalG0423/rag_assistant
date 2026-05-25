@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getStoredToken } from '@/lib/auth'
+import { apiUrl } from '@/lib/api'
 
 type Status = {
   last_index?: number
@@ -62,7 +63,7 @@ export default function UploadProgress({ documentId }: { documentId: string }) {
     const fetchStatus = async () => {
       try {
         const token = getStoredToken()
-        const res = await fetch(`/upload/status/${encodeURIComponent(documentId)}`, {
+        const res = await fetch(apiUrl(`/upload/status/${encodeURIComponent(documentId)}`), {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         })
         if (!res.ok) {

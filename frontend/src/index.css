@@ -1,26 +1,203 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-html {
-  background-color: #080a0f;
+@layer base {
+  :root {
+    /* Backgrounds — layered depth */
+    --bg-base: #080B0F;
+    --bg-surface: #0E1117;
+    --bg-elevated: #161B24;
+    --bg-overlay: #1C2333;
+    --bg-glass: rgba(255, 255, 255, 0.04);
+
+    /* Brand Accent — electric violet-blue */
+    --accent-primary: #6C63FF;
+    --accent-glow: rgba(108, 99, 255, 0.25);
+    --accent-secondary: #00D4FF;
+    --accent-warm: #FF6B35;
+
+    /* Text */
+    --text-primary: #F0F2F5;
+    --text-secondary: #8B95A8;
+    --text-muted: #4A5568;
+    --text-inverse: #080B0F;
+
+    /* Borders */
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-default: rgba(255, 255, 255, 0.10);
+    --border-strong: rgba(255, 255, 255, 0.18);
+    --border-accent: rgba(108, 99, 255, 0.4);
+
+    /* Status */
+    --status-ready: #22C55E;
+    --status-indexing: #F59E0B;
+    --status-error: #EF4444;
+
+    /* Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-full: 9999px;
+
+    /* Shadows */
+    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+    --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.7);
+    --shadow-glow: 0 0 40px rgba(108, 99, 255, 0.2);
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: var(--radius-full);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--border-strong);
+  }
+
+  /* Selection */
+  ::selection {
+    background: rgba(108, 99, 255, 0.3);
+    color: var(--text-primary);
+  }
 }
 
-body {
-  background-color: #080a0f;
-  margin: 0;
-  padding: 0;
+@layer components {
+  /* Glass card */
+  .glass-card {
+    @apply bg-bg-elevated/80 backdrop-blur-xl border border-border-subtle rounded-xl;
+  }
+
+  /* Glass button */
+  .glass-button {
+    @apply bg-bg-glass backdrop-blur-sm border border-border-subtle rounded-lg 
+           hover:bg-bg-overlay hover:border-border-default transition-all duration-200;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply bg-accent-primary text-white font-medium rounded-full px-6 py-2.5
+           hover:shadow-accent-glow hover:-translate-y-0.5 transition-all duration-200
+           active:translate-y-0;
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply border border-border-strong text-text-primary font-medium rounded-full px-6 py-2.5
+           hover:bg-bg-overlay hover:border-border-default transition-all duration-200;
+  }
+
+  /* Ghost button */
+  .btn-ghost {
+    @apply text-text-secondary font-medium rounded-lg px-4 py-2
+           hover:bg-bg-overlay hover:text-text-primary transition-all duration-200;
+  }
+
+  /* Input field */
+  .input-field {
+    @apply bg-bg-elevated border border-border-default rounded-lg px-4 py-2.5
+           text-text-primary placeholder-text-muted
+           focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary/30
+           transition-all duration-200;
+  }
+
+  /* Status badge */
+  .badge-ready {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
+           bg-status-ready/15 text-status-ready;
+  }
+
+  .badge-indexing {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
+           bg-status-indexing/15 text-status-indexing;
+  }
+
+  .badge-error {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
+           bg-status-error/15 text-status-error;
+  }
+
+  /* Card */
+  .card {
+    @apply bg-bg-elevated border border-border-subtle rounded-lg
+           hover:-translate-y-0.5 hover:border-border-strong transition-all duration-200;
+  }
+
+  /* Chat message */
+  .message-user {
+    @apply bg-bg-elevated text-text-primary rounded-2xl rounded-tr-sm px-4 py-3 max-w-[80%] ml-auto;
+  }
+
+  .message-ai {
+    @apply text-text-primary rounded-2xl rounded-tl-sm px-4 py-3 max-w-[80%];
+  }
+
+  /* Chat input */
+  .chat-input {
+    @apply bg-bg-elevated/80 backdrop-blur-xl border border-border-default rounded-2xl
+           focus-within:border-accent-primary focus-within:shadow-accent-glow
+           transition-all duration-200;
+  }
+
+  /* Suggestion chip */
+  .suggestion-chip {
+    @apply glass-button text-sm text-text-secondary px-4 py-2 rounded-full
+           hover:text-text-primary hover:-translate-y-0.5 hover:border-accent-primary/40
+           transition-all duration-200 cursor-pointer;
+  }
+
+  /* Sidebar item */
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary
+           hover:bg-bg-overlay hover:text-text-primary transition-all duration-150 cursor-pointer;
+  }
+
+  .sidebar-item-active {
+    @apply sidebar-item bg-bg-elevated text-text-primary border-l-2 border-accent-primary;
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4;
+  }
+
+  .modal-content {
+    @apply bg-bg-elevated rounded-xl shadow-modal max-w-3xl w-full max-h-[85vh] overflow-hidden
+           animate-scale-in;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent;
+  }
+
+  /* Pulse dot for indexing status */
+  .pulse-dot {
+    @apply w-2 h-2 rounded-full bg-status-indexing animate-pulse;
+  }
 }
 
-#root {
-  background-color: #080a0f;
-  min-height: 100vh;
-}
-
-/* Completely hide default scrollbars for all elements, letting our custom React component handle scrolling visuals */
-* {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
-}
-
-*::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }
