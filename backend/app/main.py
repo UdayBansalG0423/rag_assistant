@@ -42,6 +42,15 @@ app.include_router(health_router)
 
 rag_service = RAGService()
 
+
+@app.on_event("startup")
+def warm_embedding_model():
+    try:
+        rag_service.embedding_provider._get_local_model()
+        logger.info("Embedding model loaded successfully")
+    except Exception as exc:
+        logger.exception("Embedding model failed to load on startup: %s", exc)
+
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -66,4 +75,15 @@ def ask(
             "latency": 0.0
         }
 
-    return rag_service.generate(q, user_id=current_user.id)
+    try:
+        return rag_service.generate(q, user_id=current_user.id)
+    except RuntimeError as exc:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "answer": "Embedding model is not available right now.",
+                "sources": [],
+                "latency": 0.0,
+                "detail": str(exc),
+            },
+        )

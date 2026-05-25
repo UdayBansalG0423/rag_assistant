@@ -60,8 +60,8 @@ export default function Dashboard() {
       
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 overflow-auto">
+        <div className="flex flex-1 min-h-0 flex-col">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <ChatThread />
           </div>
           <div className="border-t border-gray-800 p-4">

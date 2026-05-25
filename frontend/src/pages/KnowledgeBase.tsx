@@ -14,7 +14,7 @@ export default function KnowledgeBase() {
   const [search, setSearch] = useState("");
 
   // Use polling hook to automatically update documents
-  const { documents, loading, error, refresh, retry, hasProcessing, polling } = useDocumentPolling({
+  const { documents, loading, error, refresh, retry, polling } = useDocumentPolling({
     pollInterval: 2000, // Poll every 2 seconds
     enabled: true,
     stopWhenComplete: false, // Keep polling even after completion
