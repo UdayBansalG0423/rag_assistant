@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.services.auth_service import get_current_user_from_credentials
 from app.routes.auth import router as auth_router
+from app.core.model_registry import initialize_models
 import logging
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -44,10 +45,9 @@ rag_service = RAGService()
 
 
 @app.on_event("startup")
-def warm_embedding_model():
+async def warm_embedding_model():
     try:
-        rag_service.embedding_provider._get_local_model()
-        logger.info("Embedding model loaded successfully")
+        initialize_models()
     except Exception as exc:
         logger.exception("Embedding model failed to load on startup: %s", exc)
 

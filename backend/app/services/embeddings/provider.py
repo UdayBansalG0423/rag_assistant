@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import requests
 
-from app.services.embeddings.model_loader import load_sentence_transformer
+from app.core.model_registry import get_embedding_model, get_embedding_model_error
 
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 class EmbeddingProvider:
     def __init__(self):
         self.provider = os.getenv("EMBEDDING_PROVIDER", "local")
-        self.model = None
 
         if self.provider == "huggingface":
             self.api_key = os.getenv("HF_API_KEY")
@@ -24,11 +23,6 @@ class EmbeddingProvider:
                 "https://router.huggingface.co/hf-inference/"
                 "models/sentence-transformers/all-MiniLM-L6-v2"
             )
-
-    def _get_local_model(self):
-        if self.model is None:
-            self.model = load_sentence_transformer()
-        return self.model
 
     def _normalize_texts(self, texts):
         if isinstance(texts, (str, bytes)):
@@ -75,7 +69,7 @@ class EmbeddingProvider:
             return embeddings
 
         if self.provider == "local":
-            model = self._get_local_model()
+            model = get_embedding_model()
             batch_size = int(os.getenv("EMBED_BATCH_SIZE", "32"))
             clean_chunks = [
                 str(chunk).strip()
@@ -83,20 +77,27 @@ class EmbeddingProvider:
                 if chunk and str(chunk).strip()
             ]
 
-            print(f"Total chunks: {len(clean_chunks)}")
+            if not clean_chunks:
+                return []
 
-            embeddings = model.encode(
-                clean_chunks,
-                batch_size=batch_size,
-                show_progress_bar=True,
-            )
+            try:
+                embeddings = model.encode(
+                    clean_chunks,
+                    batch_size=batch_size,
+                    show_progress_bar=False,
+                )
+            except Exception:
+                logger.exception(
+                    "Embedding encode failed; returning zero-vector fallback | model_error=%s",
+                    get_embedding_model_error(),
+                )
+                dimension = getattr(model, "get_sentence_embedding_dimension", lambda: 384)()
+                embeddings = [np.zeros(dimension, dtype=float).tolist() for _ in clean_chunks]
 
             if hasattr(embeddings, "tolist"):
                 embeddings = embeddings.tolist()
             else:
                 embeddings = [emb.tolist() if hasattr(emb, "tolist") else list(emb) for emb in embeddings]
-
-            print("Embeddings generated successfully")
 
             return embeddings
 

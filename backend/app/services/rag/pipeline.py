@@ -1,7 +1,7 @@
 from app.services.documents.chunker import chunk_text
 from app.services.documents.parser import extract_pdf_text
 from app.services.documents.sanitizer import clean_chunks
-from app.services.embeddings.model_loader import load_sentence_transformer
+from app.core.model_registry import get_embedding_model
 from app.services.retrieval.retriever import VectorStore
 from app.services.llm import generate_response
 from app.core.logger import logger
@@ -11,7 +11,6 @@ import time
 
 SIMILARITY_THRESHOLD = 5.0
 
-embedding_model = load_sentence_transformer()
 vector_store = None
 
 
@@ -20,6 +19,7 @@ def load_pdf_and_index(path: str):
 
     text = extract_pdf_text(path)
     chunks = clean_chunks(chunk_text(text, 500))
+    embedding_model = get_embedding_model()
     embeddings = embedding_model.encode(chunks)
 
     vector_store = VectorStore(len(embeddings[0]))
@@ -30,6 +30,7 @@ def retrieve(query: str):
     if vector_store is None:
         raise RuntimeError("Vector store is not initialized. Call /load first to index a document.")
 
+    embedding_model = get_embedding_model()
     query_embedding = embedding_model.encode([query])[0]
     return vector_store.search(query_embedding)
 

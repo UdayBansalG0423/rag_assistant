@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from app.core.queue import dequeue_task
 from app.core.progress import update_document_status, mark_completed, mark_failed
+from app.core.model_registry import initialize_models
 from app.services.rag.orchestrator import RAGService
 
 # Setup logging
@@ -21,6 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 rag_service = RAGService()
+initialize_models()
 
 logger.info("🚀 Worker started. Listening for tasks...")
 
