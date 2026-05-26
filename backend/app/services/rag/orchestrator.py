@@ -267,14 +267,16 @@ class RAGService:
 
     def retrieve(self, query: str, user_id: str = None):
         query_embedding = self.embedding_provider.embed([query])[0]
-        logger.info(f"Retrieval query generated for user_id={user_id}")
+        logger.info("retrieval_start", extra={"user_id": user_id, "query": query})
+        start = time.time()
 
         if self.vector_provider == "pinecone":
             results = self.vector_store.search(query_embedding, user_id=user_id)
         else:
             results = self.vector_store.search(query_embedding, user_id=user_id)
 
-        logger.info(f"Retrieved matches: {len(results)}")
+        latency_ms = int((time.time() - start) * 1000)
+        logger.info("retrieval_success", extra={"user_id": user_id, "count": len(results), "latency_ms": latency_ms})
         return results
 
     def generate(self, query: str, user_id: str = None):
@@ -314,11 +316,9 @@ Answer:
 """
 
         answer = generate_response(prompt)
-        latency = round(time.time() - start_time, 2)
 
-        logger.info(f"Query: {query}")
-        logger.info(f"Retrieved count: {len(filtered)}")
-        logger.info(f"Latency: {latency:.2f}s")
+        generation_latency_ms = int((time.time() - start_time) * 1000)
+        logger.info("generation_complete", extra={"query": query, "retrieved_count": len(filtered), "generation_latency_ms": generation_latency_ms})
 
         return {
             "answer": answer,

@@ -3,6 +3,10 @@ import uuid
 import re
 
 from pinecone import Pinecone
+from app.core.logger import get_logger
+import time
+
+logger = get_logger(__name__)
 
 
 import unicodedata
@@ -107,16 +111,26 @@ class PineconeVectorStore:
             query_kwargs["namespace"] = user_id
             query_kwargs["filter"] = {"user_id": user_id}
 
-        results = self.index.query(**query_kwargs)
+        try:
+            start = time.time()
+            results = self.index.query(**query_kwargs)
+            latency_ms = int((time.time() - start) * 1000)
+            logger.info("pinecone_query", extra={"latency_ms": latency_ms, "user_id": user_id, "index": self.index_name})
 
-        formatted = []
-        for match in results["matches"]:
-            metadata = match.get("metadata") or {}
-            formatted.append({
-                "chunk": _safe_text(metadata.get("chunk", "")),
-                "doc_id": _safe_text(metadata.get("doc_id") or metadata.get("document_id")),
-                "metadata": metadata,
-                "score": match["score"],
-            })
+            formatted = []
+            for match in results.get("matches", []):
+                metadata = match.get("metadata") or {}
+                formatted.append({
+                    "chunk": _safe_text(metadata.get("chunk", "")),
+                    "doc_id": _safe_text(metadata.get("doc_id") or metadata.get("document_id")),
+                    "metadata": metadata,
+                    "score": match.get("score"),
+                })
 
-        return formatted
+            if not formatted:
+                logger.warning("pinecone_empty_retrieval", extra={"user_id": user_id, "index": self.index_name})
+
+            return formatted
+        except Exception as exc:
+            logger.exception("pinecone_query_failed", extra={"user_id": user_id, "error": str(exc)})
+            return []

@@ -5,6 +5,9 @@ from fastapi import HTTPException
 from postgrest.exceptions import APIError
 
 from app.core.supabase_client import supabase_admin
+from app.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class ChatService:
@@ -65,9 +68,11 @@ class ChatService:
             supabase_admin.table("chat_sessions").insert(record).execute()
         except Exception as exc:
             self._raise_if_schema_missing(exc)
+        logger.info("session_creation", extra={"session_id": session_id, "user_id": user_id})
         return record
 
     def list_sessions(self, user_id: str):
+        logger.info("session_list_retrieval_start", extra={"user_id": user_id})
         try:
             response = (
                 supabase_admin.table("chat_sessions")
@@ -78,6 +83,7 @@ class ChatService:
             )
         except Exception as exc:
             self._raise_if_schema_missing(exc)
+        logger.info("session_list_retrieval_success", extra={"user_id": user_id, "count": len(response.data or [])})
         return response.data or []
 
     def delete_session(self, user_id: str, session_id: str):
@@ -131,9 +137,11 @@ class ChatService:
             supabase_admin.table("chat_messages").insert(record).execute()
         except Exception as exc:
             self._raise_if_schema_missing(exc)
+        logger.info("persistence_success", extra={"message_id": message_id, "session_id": session_id, "user_id": user_id, "latency": latency})
         return record
 
     def load_history(self, user_id: str, session_id: str):
+        logger.info("session_retrieval_start", extra={"session_id": session_id, "user_id": user_id})
         session = self._fetch_session_or_404(user_id, session_id)
 
         try:

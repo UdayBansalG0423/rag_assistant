@@ -75,10 +75,13 @@ class DocumentService:
             temp_path = temp_file.name
 
         try:
+            from app.core.logger import get_request_id
+
             process_document.delay(
                 file_path=temp_path,
                 user_id=str(user_id),
-                document_id=str(document_id)
+                document_id=str(document_id),
+                request_id=get_request_id(),
             )
             logger.info(
                 "Task queued successfully | document_id=%s user_id=%s status=queued",

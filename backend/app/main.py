@@ -12,6 +12,10 @@ from app.services.auth_service import get_current_user_from_credentials
 from app.routes.auth import router as auth_router
 from app.core.model_registry import initialize_models
 import logging
+import uuid
+import time
+from fastapi import Request
+from app.core.logger import set_context, set_start_time, clear_context, get_logger
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -42,6 +46,30 @@ app.include_router(chat_router)
 app.include_router(health_router)
 
 rag_service = RAGService()
+
+
+@app.middleware("http")
+async def add_request_context(request: Request, call_next):
+    request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+    set_context(request_id=request_id)
+    start = time.time()
+    set_start_time(start)
+
+    try:
+        response = await call_next(request)
+        status = "success" if 200 <= response.status_code < 400 else "failure"
+        # Log a concise request summary
+        get_logger().info(
+            "Request completed",
+            extra={
+                "endpoint": request.url.path,
+                "status": status,
+                "latency_ms": int((time.time() - start) * 1000),
+            },
+        )
+        return response
+    finally:
+        clear_context()
 
 
 @app.on_event("startup")

@@ -13,13 +13,10 @@ from app.core.queue import dequeue_task
 from app.core.progress import update_document_status, mark_completed, mark_failed
 from app.core.model_registry import initialize_models
 from app.services.rag.orchestrator import RAGService
+from app.core.logger import set_context, set_start_time, clear_context, get_logger
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Use configured structured logger
+logger = get_logger(__name__)
 
 rag_service = RAGService()
 initialize_models()
@@ -34,6 +31,10 @@ def process_task(task: dict):
     user_id = task.get("user_id")
     document_id = task.get("document_id")
     temp_file = task.get("temp_file", False)
+
+    # set context for this processing loop
+    set_context(user_id=user_id)
+    set_start_time()
 
     try:
         logger.info(f"📄 Processing document: {document_id} for user: {user_id}")
@@ -76,6 +77,7 @@ def process_task(task: dict):
                 logger.info(f"🗑️ Cleaned up temp file: {file_path}")
             except Exception as e:
                 logger.error(f"Failed to delete temp file: {str(e)}")
+    clear_context()
 
 
 if __name__ == "__main__":

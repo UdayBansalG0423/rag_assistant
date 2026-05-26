@@ -5,6 +5,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr
 
 from app.core.supabase_client import supabase, supabase_admin
+from app.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 security = HTTPBearer()
@@ -66,6 +69,7 @@ async def signup(request: SignUpRequest) -> SignUpResponse:
             name=request.name,
         )
     except Exception as exc:
+        logger.exception("signup_failed", extra={"email": request.email})
         error_msg = str(exc)
         if "already exists" in error_msg.lower():
             raise HTTPException(status_code=400, detail="Email already registered")
@@ -80,9 +84,12 @@ async def login(request: LoginRequest) -> LoginResponse:
         })
 
         if not response.session:
+            logger.warning("login_failure", extra={"email": request.email})
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
         supabase.table("profiles").select("*").eq("id", response.user.id).single().execute()
+
+        logger.info("login_success", extra={"user_id": response.user.id, "email": response.user.email or request.email})
 
         return LoginResponse(
             access_token=response.session.access_token,
@@ -92,6 +99,7 @@ async def login(request: LoginRequest) -> LoginResponse:
             token_type="bearer",
         )
     except Exception:
+        logger.exception("login_exception", extra={"email": request.email})
         raise HTTPException(status_code=401, detail="Login failed")
 
 
@@ -104,6 +112,7 @@ async def get_current_user(token: str) -> CurrentUserResponse:
         user_email = getattr(user, "email", None)
 
         if not user_id:
+            logger.warning("token_validation_failed", extra={"token": token})
             raise HTTPException(status_code=401, detail="Invalid token")
 
         try:
@@ -116,6 +125,7 @@ async def get_current_user(token: str) -> CurrentUserResponse:
 
         return CurrentUserResponse(id=user_id, email=user_email or "", name=name)
     except Exception:
+        logger.exception("token_validation_exception")
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
@@ -130,12 +140,15 @@ async def refresh_token(refresh_token: str):
         response = supabase.auth.refresh_session(refresh_token)
 
         if not response.session:
+            logger.warning("refresh_token_failed", extra={"refresh_token": refresh_token})
             raise HTTPException(status_code=401, detail="Invalid refresh token")
 
+        logger.info("refresh_token_success", extra={})
         return {
             "access_token": response.session.access_token,
             "refresh_token": response.session.refresh_token,
             "token_type": "bearer",
         }
     except Exception:
+        logger.exception("refresh_token_exception")
         raise HTTPException(status_code=401, detail="Token refresh failed")
