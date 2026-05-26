@@ -1,7 +1,7 @@
 # Frontend Stabilization Tasks
 
 ## Phase 1
-- [ ] remove duplicate chat flow
+- [ ] remove duplicate chat flowgit p
 - [ ] centralize session ownership
 - [ ] integrate React Query
 - [ ] implement chat orchestration hook
