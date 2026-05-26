@@ -43,4 +43,17 @@ async def refresh_token_route(refresh_token_str: str):
 
 @router.post("/auth/logout")
 async def logout_route(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    from app.services.auth.auth_service import get_current_user
+    from app.core.logger import get_logger
+
+    logger = get_logger(__name__)
+    user_id = None
+    try:
+        user = await get_current_user(credentials.credentials)
+        user_id = user.id
+    except Exception:
+        # token invalid or missing; still return success for idempotency
+        pass
+
+    logger.info("logout", extra={"user_id": user_id})
     return {"message": "Logged out successfully"}

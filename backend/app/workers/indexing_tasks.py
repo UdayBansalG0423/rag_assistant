@@ -1,6 +1,6 @@
 from app.workers.celery_app import celery_app
 from app.core.progress import update_document_status
-from app.core.logger import logger
+from app.core.logger import logger, set_context, set_start_time, clear_context
 import os
 
 app = celery_app
@@ -11,14 +11,26 @@ def process_document(
     self,
     file_path,
     user_id,
-    document_id
+    document_id,
+    request_id=None,
 ):
+    # Set task-scoped context for structured logging
+    try:
+        task_id = getattr(self.request, "id", None) or getattr(self.request, "task_id", None)
+    except Exception:
+        task_id = None
+
+    set_context(task_id=task_id, user_id=user_id, request_id=request_id)
+    set_start_time()
     logger.info(
-        "Task received | document_id=%s user_id=%s retry=%s/%s",
-        document_id,
-        user_id,
-        self.request.retries,
-        self.max_retries,
+        "task_received",
+        extra={
+            "task_id": task_id,
+            "document_id": document_id,
+            "user_id": user_id,
+            "retries": self.request.retries,
+            "max_retries": self.max_retries,
+        },
     )
     update_document_status(user_id, document_id, "processing", progress=10)
     logger.info("Indexing started | document_id=%s user_id=%s", document_id, user_id)
@@ -61,28 +73,35 @@ def process_document(
 
         # Ensure terminal completed state even if callback timing changes.
         update_document_status(user_id, document_id, "completed", progress=100)
-        logger.info("Indexing completed | document_id=%s user_id=%s", document_id, user_id)
+        logger.info("task_completed", extra={"task_id": task_id, "document_id": document_id, "user_id": user_id, "status": "success"})
     except Exception as exc:
         if self.request.retries < self.max_retries:
             retry_in_seconds = 10
             retry_attempt = self.request.retries + 1
             logger.warning(
-                "Retrying task due to error | document_id=%s user_id=%s attempt=%s/%s in=%ss error=%s",
-                document_id,
-                user_id,
-                retry_attempt,
-                self.max_retries,
-                retry_in_seconds,
-                str(exc),
+                "task_retry",
+                extra={
+                    "task_id": task_id,
+                    "document_id": document_id,
+                    "user_id": user_id,
+                    "attempt": retry_attempt,
+                    "max_retries": self.max_retries,
+                    "retry_in_seconds": retry_in_seconds,
+                    "error": str(exc),
+                },
             )
             raise self.retry(exc=exc, countdown=retry_in_seconds)
 
         update_document_status(user_id, document_id, "failed", progress=0, error=str(exc))
         logger.exception(
-            "Indexing failed permanently | document_id=%s user_id=%s retries=%s",
-            document_id,
-            user_id,
-            self.request.retries,
+            "task_failed",
+            extra={
+                "task_id": task_id,
+                "document_id": document_id,
+                "user_id": user_id,
+                "retries": self.request.retries,
+                "error": str(exc),
+            },
         )
         raise
     finally:
@@ -97,3 +116,5 @@ def process_document(
                 file_path,
                 cleanup_exc,
             )
+        # Clear context to avoid leaking into other tasks
+        clear_context()
