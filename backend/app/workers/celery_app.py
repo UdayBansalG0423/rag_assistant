@@ -1,9 +1,10 @@
 import os
 
 from celery import Celery
+from app.core.config import settings
 
 
-broker_url = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+broker_url = os.getenv("CELERY_BROKER_URL", settings.REDIS_URL)
 result_backend = os.getenv("CELERY_RESULT_BACKEND", broker_url)
 
 celery_app = Celery(

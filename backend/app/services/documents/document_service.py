@@ -6,6 +6,7 @@ import uuid
 from fastapi import HTTPException, UploadFile
 from supabase import create_client
 
+from app.core.config import settings
 from app.core.logger import logger
 from app.core.supabase_client import supabase_admin
 from app.utils.hash import generate_file_hash
@@ -15,8 +16,8 @@ from app.workers.indexing_tasks import process_document
 class DocumentService:
     def __init__(self):
         self.bucket_name = os.getenv("DOCUMENT_STORAGE_BUCKET", "documents")
-        self.supabase_url = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
-        self.service_key = os.getenv("SUPABASE_SERVICE_KEY")
+        self.supabase_url = settings.SUPABASE_URL
+        self.service_key = settings.SUPABASE_SERVICE_KEY
 
         if not self.supabase_url:
             raise EnvironmentError("Missing SUPABASE_URL in environment")

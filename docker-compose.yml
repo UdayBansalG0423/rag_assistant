@@ -1,2 +1,4 @@
 networks:
   neuraldoc-network:
+    driver: bridge
+    internal: true

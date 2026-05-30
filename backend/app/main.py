@@ -1,3 +1,4 @@
+from app.core.config import settings
 from pathlib import Path
 from fastapi import FastAPI, Depends
 from app.services.rag.orchestrator import RAGService
@@ -22,19 +23,12 @@ STATIC_DIR = BASE_DIR / "static"
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="NeuralDoc RAG API")
+app = FastAPI(title="NeuralDoc RAG API", debug=settings.DEBUG)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-    ],
-    allow_credentials=True,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
     allow_methods=["*"],
     allow_headers=["*"],
 )

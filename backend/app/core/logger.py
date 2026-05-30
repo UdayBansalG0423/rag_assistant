@@ -3,6 +3,7 @@ import json
 import time
 import datetime
 import contextvars
+import os
 from typing import Any, Dict
 
 # Context variables for request/task-scoped metadata
@@ -106,7 +107,12 @@ handler.setFormatter(JSONFormatter())
 root = logging.getLogger()
 if not root.handlers:
     root.addHandler(handler)
-root.setLevel(logging.INFO)
+
+log_level_name = os.getenv("LOG_LEVEL")
+if not log_level_name:
+    log_level_name = "DEBUG" if os.getenv("ENVIRONMENT", "development").lower() == "development" else "INFO"
+
+root.setLevel(getattr(logging, log_level_name.upper(), logging.INFO))
 
 
 # Export a module-level logger for convenience

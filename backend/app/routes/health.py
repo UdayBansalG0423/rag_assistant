@@ -3,6 +3,7 @@ import os
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
+from app.core.config import settings
 from app.core.clients.redis_client import redis_client
 from app.core.supabase_client import supabase_admin
 
@@ -38,7 +39,7 @@ def health_check():
         }
 
     # Pinecone health
-    vector_provider = os.getenv("VECTOR_DB_PROVIDER", "faiss").lower()
+    vector_provider = settings.VECTOR_DB_PROVIDER
     if vector_provider != "pinecone":
         health_status["pinecone"] = {
             "status": "skipped",
@@ -48,8 +49,8 @@ def health_check():
         try:
             from pinecone import Pinecone
 
-            api_key = os.getenv("PINECONE_API_KEY")
-            index_name = os.getenv("PINECONE_INDEX", "neuraldoc-index")
+            api_key = settings.PINECONE_API_KEY
+            index_name = settings.PINECONE_INDEX or "neuraldoc-index"
             pc = Pinecone(api_key=api_key)
             index = pc.Index(index_name)
             index.describe_index_stats()
