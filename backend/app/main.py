@@ -12,11 +12,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.services.auth_service import get_current_user_from_credentials
 from app.routes.auth import router as auth_router
 from app.core.model_registry import initialize_models
+from app.core.rate_limiter import limiter, rate_limit_exceeded_handler
 import logging
 import uuid
 import time
 from fastapi import Request
 from app.core.logger import set_context, set_start_time, clear_context, get_logger
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -24,6 +27,9 @@ STATIC_DIR = BASE_DIR / "static"
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="NeuralDoc RAG API", debug=settings.DEBUG)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -85,7 +91,9 @@ def serve_frontend():
 
 
 @app.get("/ask", response_model=AskResponse)
+@limiter.limit("60/minute")
 def ask(
+    request: Request,
     q: str, 
     current_user = Depends(get_current_user_from_credentials)
 ):

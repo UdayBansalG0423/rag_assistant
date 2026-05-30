@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Request, UploadFile
 
 from app.schemas.document import DocumentsListResponse, UploadDocumentResponse
 from app.services.auth.auth_service import get_current_user_from_credentials
 from app.services.documents.document_service import DocumentService
+from app.core.rate_limiter import limiter
 import os
 import json
 
@@ -43,7 +44,9 @@ def upload_status_public(document_id: str, user: str = "testuser"):
 
 
 @router.post("/upload", response_model=UploadDocumentResponse)
+@limiter.limit("10/hour")
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
     current_user=Depends(get_current_user_from_credentials),
 ):
