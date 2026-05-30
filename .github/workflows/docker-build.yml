@@ -1,6 +1,13 @@
 name: Docker Build
 
 on:
+  push:
+    paths:
+      - "docker-compose*.yml"
+      - "backend/Dockerfile"
+      - "frontend/Dockerfile"
+      - "infra/docker/**"
+      - "infra/nginx/**"
   pull_request:
 
 jobs:
