@@ -9,6 +9,7 @@ from supabase import create_client
 from app.core.config import settings
 from app.core.logger import logger
 from app.core.supabase_client import supabase_admin
+from app.services.documents.validators import validate_and_read_pdf
 from app.utils.hash import generate_file_hash
 from app.workers.indexing_tasks import process_document
 
@@ -28,10 +29,7 @@ class DocumentService:
     async def upload_document(self, file: UploadFile, user_id: str):
         filename = Path(file.filename or "document.pdf").name
         logger.info("Upload started | user_id=%s file_name=%s", user_id, filename)
-        if not filename.lower().endswith(".pdf"):
-            raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
-
-        file_bytes = await file.read()
+        file_bytes = await validate_and_read_pdf(file)
 
         file_hash = generate_file_hash(file_bytes)
 
