@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response
 
 from app.schemas.chat import (
     ChatHistoryResponse,
@@ -9,6 +9,7 @@ from app.schemas.chat import (
 )
 from app.services.auth.auth_service import get_current_user_from_credentials
 from app.services.chat.chat_service import ChatService
+from app.core.rate_limiter import limiter
 
 
 router = APIRouter(prefix="/chat")
@@ -34,18 +35,21 @@ def delete_session(
 
 
 @router.post("/message", response_model=SaveChatMessageResponse)
+@limiter.limit("60/minute")
 def save_message(
-    request: SaveChatMessageRequest,
+    request: Request,
+    response: Response,
+    payload: SaveChatMessageRequest,
     current_user=Depends(get_current_user_from_credentials),
 ):
     return chat_service.save_message(
         user_id=current_user.id,
-        session_id=request.session_id,
-        user_query=request.user_query,
-        assistant_response=request.assistant_response,
-        sources=request.sources,
-        latency=request.latency,
-        title=request.title,
+        session_id=payload.session_id,
+        user_query=payload.user_query,
+        assistant_response=payload.assistant_response,
+        sources=payload.sources,
+        latency=payload.latency,
+        title=payload.title,
     )
 
 

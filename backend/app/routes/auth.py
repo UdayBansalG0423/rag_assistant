@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.schemas.auth import (
@@ -13,22 +13,26 @@ from app.services.auth.auth_service import (
     refresh_token,
     signup,
 )
+from app.core.rate_limiter import limiter
 
 
 router = APIRouter()
 security = HTTPBearer()
 
 
+@router.post("/auth/register", response_model=SignUpResponse, status_code=201)
 @router.post("/auth/signup", response_model=SignUpResponse, status_code=201)
-async def signup_route(request: SignUpRequest):
-    return await signup(request)
+@limiter.limit("5/minute")
+async def signup_route(request: Request, response: Response, payload: SignUpRequest):
+    return await signup(payload)
 
 
 @router.post("/auth/login", response_model=LoginResponse)
-async def login_route(request: LoginRequest):
+@limiter.limit("5/minute")
+async def login_route(request: Request, response: Response, payload: LoginRequest):
     from app.services.auth.auth_service import login
 
-    return await login(request)
+    return await login(payload)
 
 
 @router.get("/me", response_model=CurrentUserResponse)

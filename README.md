@@ -539,6 +539,7 @@ cd backend
 .venv\Scripts\activate
 python -m celery -A app.workers.celery_app:celery_app worker --loglevel=info --pool=solo
 ```
+> **Note for Windows Users:** Celery does not natively support Windows with standard execution pools. You *must* include `--pool=solo` (as shown above) to prevent hanging tasks and multiprocessing errors when running locally on Windows.
 
 #### Terminal 3: Start Redis
 

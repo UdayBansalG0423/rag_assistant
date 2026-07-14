@@ -3,16 +3,11 @@ import os
 import redis
 from app.core.logger import get_logger
 import time
+from app.core.config import settings
 
 logger = get_logger(__name__)
 
-
-redis_client = redis.Redis(
-    host=os.getenv("REDIS_HOST", "localhost"),
-    port=int(os.getenv("REDIS_PORT", "6379")),
-    db=int(os.getenv("REDIS_DB", "0")),
-    decode_responses=True,
-)
+redis_client = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
 
 # Try a ping to surface connection failures early; keep client for retries if ping fails.
 try:

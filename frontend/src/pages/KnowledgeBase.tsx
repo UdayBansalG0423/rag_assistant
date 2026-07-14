@@ -4,7 +4,7 @@ import { FileText, Loader2, RefreshCw, Upload, DatabaseZap, RotateCcw } from "lu
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import UploadProgress from "@/components/UploadProgress";
-import { uploadPdf } from "@/services/document.service";
+import { uploadPdf, retryDocument } from "@/services/document.service";
 import { useDocumentPolling } from "@/hooks/use-document-polling";
 import { DocumentStatusDisplay } from "@/components/DocumentStatusDisplay";
 
@@ -105,7 +105,18 @@ export default function KnowledgeBase() {
 
           {activeDocumentId ? (
             <div className="mt-4 rounded-2xl bg-black/10 p-3">
-              <UploadProgress documentId={activeDocumentId} onRetry={refresh} />
+              <UploadProgress
+                documentId={activeDocumentId}
+                onRetry={async () => {
+                  try {
+                    await retryDocument(activeDocumentId);
+                    toast.success("Document retry queued");
+                    refresh();
+                  } catch (error: any) {
+                    toast.error(error.message || "Retry failed");
+                  }
+                }}
+              />
             </div>
           ) : null}
         </section>
@@ -171,8 +182,14 @@ export default function KnowledgeBase() {
                       status={doc.status || "processing"}
                       progress={doc.progress}
                       error={doc.error}
-                      onRetry={() => {
-                        toast.info("Retry feature coming soon");
+                      onRetry={async () => {
+                        try {
+                          await retryDocument(doc.id);
+                          toast.success("Document retry queued");
+                          refresh();
+                        } catch (error: any) {
+                          toast.error(error.message || "Retry failed");
+                        }
                       }}
                     />
                   </div>

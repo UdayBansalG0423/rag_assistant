@@ -3,6 +3,7 @@ frontend/dist/
 backend/myvenv/
 .venv/
 backend/.env
+backend/.env.*
 backend/__pycache__/
 backend/*.pyc
 backend/vector_store/
@@ -10,6 +11,8 @@ backend/mlruns/
 backend/mlflow.db
 backend/rag_assistant.db
 .env
+.env.*
+!.env.example
 __pycache__/
 *.pyc
 backend/vector_store_progress/

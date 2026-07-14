@@ -107,7 +107,7 @@ export default function ChatThread() {
   if (!sessionId) return <EmptyState />
 
   return (
-    <main ref={scrollContainerRef} onScroll={handleScroll} className="relative h-full min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-28 sm:px-6">
+    <main ref={scrollContainerRef} onScroll={handleScroll} className="relative h-full min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-6 sm:px-6">
       {messages.length === 0 ? (
         <EmptyState />
       ) : (
@@ -126,7 +126,6 @@ export default function ChatThread() {
           ))}
         </div>
       )}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-bg-base to-transparent" />
     </main>
   )
 }

@@ -317,6 +317,7 @@ Answer:
 
         answer = generate_response(prompt)
 
+        latency = round(time.time() - start_time, 2)
         generation_latency_ms = int((time.time() - start_time) * 1000)
         logger.info("generation_complete", extra={"query": query, "retrieved_count": len(filtered), "generation_latency_ms": generation_latency_ms})
 
