@@ -1,4 +1,4 @@
-import { Menu, Upload, User, Settings } from 'lucide-react'
+import { Menu, Upload } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'

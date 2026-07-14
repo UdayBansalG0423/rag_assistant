@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useSessions } from '../hooks/useSessions'
 import { useChatStore } from '../store/useChatStore'
 import SessionItem from './SessionItem'
-import { Logo } from '@/components/Logo'
+
 
 export default function ChatSidebar() {
   const { sessionsQuery, createMutation, deleteMutation } = useSessions()
