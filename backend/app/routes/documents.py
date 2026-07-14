@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
 
 from app.schemas.document import DocumentsListResponse, UploadDocumentResponse
 from app.services.auth.auth_service import get_current_user_from_credentials
@@ -47,10 +47,23 @@ def upload_status_public(document_id: str, user: str = "testuser"):
 @limiter.limit("10/hour")
 async def upload_document(
     request: Request,
+    response: Response,
     file: UploadFile = File(...),
     current_user=Depends(get_current_user_from_credentials),
 ):
     return await document_service.upload_document(file, current_user.id)
+
+
+@router.post("/upload/retry/{document_id}")
+@limiter.limit("10/hour")
+async def retry_document_upload(
+    document_id: str,
+    request: Request,
+    response: Response,
+    current_user=Depends(get_current_user_from_credentials),
+):
+    return await document_service.retry_document(document_id, current_user.id)
+
 
 
 @router.get("/documents", response_model=DocumentsListResponse)

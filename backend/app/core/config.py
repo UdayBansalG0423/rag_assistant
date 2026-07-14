@@ -21,10 +21,10 @@ def _load_environment_files() -> str:
 
     os.environ["ENVIRONMENT"] = environment
 
-    env_files = [PROJECT_ROOT / f".env.{environment}", PROJECT_ROOT / ".env"]
-    for env_file in env_files:
-        if env_file.exists():
-            load_dotenv(env_file, override=False)
+    # Prefer the project root .env when it exists
+    env_file = PROJECT_ROOT / ".env"
+    if env_file.exists():
+        load_dotenv(env_file, override=True)
 
     return environment
 

@@ -1,6 +1,6 @@
 from app.core.config import settings
 from pathlib import Path
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Response
 from app.services.rag.orchestrator import RAGService
 from app.schemas.response import AskResponse
 from app.routes.documents import router as documents_router
@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.services.auth_service import get_current_user_from_credentials
 from app.routes.auth import router as auth_router
 from app.core.model_registry import initialize_models
+from app.core.model_registry import start_embedding_model_warmup
 from app.core.rate_limiter import limiter, rate_limit_exceeded_handler
 import logging
 import uuid
@@ -71,13 +72,25 @@ async def add_request_context(request: Request, call_next):
     finally:
         clear_context()
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    get_logger().exception(
+        "Unhandled exception",
+        extra={
+            "endpoint": request.url.path,
+            "error": str(exc),
+        },
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred."},
+    )
+
+
 
 @app.on_event("startup")
 async def warm_embedding_model():
-    try:
-        initialize_models()
-    except Exception as exc:
-        logger.exception("Embedding model failed to load on startup: %s", exc)
+    start_embedding_model_warmup()
 
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -94,6 +107,7 @@ def serve_frontend():
 @limiter.limit("60/minute")
 def ask(
     request: Request,
+    response: Response,
     q: str, 
     current_user = Depends(get_current_user_from_credentials)
 ):

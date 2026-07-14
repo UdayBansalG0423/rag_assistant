@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { cn } from '@/utils/cn'
 import { useDocumentPolling } from '@/hooks/use-document-polling'
-import { uploadPdf } from '@/services/document.service'
+import { uploadPdf, retryDocument } from '@/services/document.service'
 import UploadProgress from '@/components/UploadProgress'
 import { DocumentStatusDisplay } from '@/components/DocumentStatusDisplay'
 
@@ -220,7 +220,15 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
                       status={doc.status === 'completed' ? 'completed' : doc.status === 'failed' ? 'failed' : doc.status === 'queued' ? 'queued' : 'processing'}
                       progress={doc.progress}
                       error={doc.error}
-                      onRetry={() => refresh()}
+                      onRetry={async () => {
+                        try {
+                          await retryDocument(doc.id)
+                          toast.success('Document retry queued')
+                          refresh()
+                        } catch (error: any) {
+                          toast.error(error.message || 'Retry failed')
+                        }
+                      }}
                     />
                   </div>
                   <div className="col-span-2 flex justify-end">
@@ -259,7 +267,18 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
 
             {activeDocumentId && (
               <div className="px-6 pb-6">
-                <UploadProgress documentId={activeDocumentId} />
+                <UploadProgress
+                  documentId={activeDocumentId}
+                  onRetry={async () => {
+                    try {
+                      await retryDocument(activeDocumentId)
+                      toast.success('Document retry queued')
+                      refresh()
+                    } catch (error: any) {
+                      toast.error(error.message || 'Retry failed')
+                    }
+                  }}
+                />
               </div>
             )}
           </motion.div>

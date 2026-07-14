@@ -155,6 +155,17 @@ export async function uploadPdf(
   });
 }
 
+/** Retry processing a failed document. */
+export async function retryDocument(
+  documentId: string,
+): Promise<{ id: string; message: string; status: string }> {
+  const headers = await getAuthHeaders();
+  return request(`/upload/retry/${documentId}`, {
+    method: 'POST',
+    headers,
+  });
+}
+
 /** Ask a question against the indexed knowledge base. */
 export async function askQuery(
   query: string,

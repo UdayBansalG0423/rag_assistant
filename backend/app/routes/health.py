@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.core.clients.redis_client import redis_client
+from app.core.model_registry import is_embedding_model_loading, is_embedding_model_ready
 from app.core.supabase_client import supabase_admin
 
 
@@ -15,6 +16,9 @@ router = APIRouter()
 def health_check():
     health_status = {
         "backend": "healthy",
+        "embedding_model": "healthy" if is_embedding_model_ready() else {
+            "status": "warming_up" if is_embedding_model_loading() else "not_ready",
+        },
     }
 
     # Redis health

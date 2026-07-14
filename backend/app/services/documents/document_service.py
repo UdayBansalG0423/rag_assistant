@@ -45,7 +45,7 @@ class DocumentService:
             logger.info("Duplicate document detected | user_id=%s file_name=%s", user_id, filename)
             raise HTTPException(
                 status_code=400,
-                detail="Document already uploaded"
+                detail="Document already uploaded. If it failed, please use the retry button."
             )
 
         document_id = str(uuid.uuid4())
@@ -101,6 +101,65 @@ class DocumentService:
 
         logger.info("Upload completed | document_id=%s user_id=%s", document_id, user_id)
         return {**record, "message": "File uploaded successfully"}
+
+    async def retry_document(self, document_id: str, user_id: str):
+        existing_doc = (
+            supabase_admin.table("documents")
+            .select("*")
+            .eq("id", document_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+        if not existing_doc.data:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        doc = existing_doc.data[0]
+        if doc.get("status") == "completed":
+            raise HTTPException(status_code=400, detail="Document is already completed")
+
+        storage_path = doc.get("storage_path")
+        if not storage_path:
+            raise HTTPException(status_code=400, detail="Document missing storage path")
+
+        storage_client = create_client(self.supabase_url, self.service_key).storage
+        try:
+            file_data = storage_client.from_(self.bucket_name).download(storage_path)
+        except Exception as e:
+            logger.exception("Failed to download file from storage | storage_path=%s", storage_path)
+            raise HTTPException(status_code=500, detail="Failed to retrieve file from storage")
+
+        temp_dir = Path(os.getenv("UPLOAD_DIR", "/app/tmp_uploads"))
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", dir=temp_dir) as temp_file:
+            temp_file.write(file_data)
+            temp_path = temp_file.name
+
+        supabase_admin.table("documents").update({
+            "status": "queued",
+            "progress": 0,
+            "error_message": None,
+        }).eq("id", document_id).execute()
+
+        try:
+            from app.core.logger import get_request_id
+            process_document.delay(
+                file_path=temp_path,
+                user_id=str(user_id),
+                document_id=str(document_id),
+                request_id=get_request_id(),
+            )
+            logger.info("Task re-queued successfully | document_id=%s user_id=%s status=queued", document_id, user_id)
+        except Exception as exc:
+            supabase_admin.table("documents").update({
+                "status": "failed",
+                "progress": 0,
+            }).eq("id", document_id).execute()
+            logger.exception("Failed to re-enqueue indexing task | document_id=%s user_id=%s", document_id, user_id)
+            raise HTTPException(status_code=500, detail=f"Failed to re-enqueue indexing task: {exc}")
+
+        return {"id": document_id, "message": "Document retry queued successfully", "status": "queued"}
 
     def list_documents(self, user_id: str):
         response = (

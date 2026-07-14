@@ -31,26 +31,26 @@ function MessageBubble({
 }) {
 
   const markdownComponents = {
-    p: ({ children }: { children?: React.ReactNode }) => <p className="my-0">{children}</p>,
-    ul: ({ children }: { children?: React.ReactNode }) => <ul className="my-2 list-disc space-y-1 pl-5">{children}</ul>,
-    ol: ({ children }: { children?: React.ReactNode }) => <ol className="my-2 list-decimal space-y-1 pl-5">{children}</ol>,
-    li: ({ children }: { children?: React.ReactNode }) => <li className="leading-7">{children}</li>,
+    p: ({ children }: { children?: React.ReactNode }) => <p className="mb-4 last:mb-0 leading-relaxed">{children}</p>,
+    ul: ({ children }: { children?: React.ReactNode }) => <ul className="mb-4 list-disc space-y-2 pl-5 last:mb-0">{children}</ul>,
+    ol: ({ children }: { children?: React.ReactNode }) => <ol className="mb-4 list-decimal space-y-2 pl-5 last:mb-0">{children}</ol>,
+    li: ({ children }: { children?: React.ReactNode }) => <li className="leading-relaxed">{children}</li>,
     blockquote: ({ children }: { children?: React.ReactNode }) => (
-      <blockquote className="my-2 border-l-2 border-border-default pl-4 text-text-secondary">{children}</blockquote>
+      <blockquote className="mb-4 border-l-2 border-border-default pl-4 text-text-secondary italic last:mb-0">{children}</blockquote>
     ),
-    h1: ({ children }: { children?: React.ReactNode }) => <h1 className="my-2 text-base font-semibold text-text-primary">{children}</h1>,
-    h2: ({ children }: { children?: React.ReactNode }) => <h2 className="my-2 text-[15px] font-semibold text-text-primary">{children}</h2>,
-    h3: ({ children }: { children?: React.ReactNode }) => <h3 className="my-2 text-sm font-semibold text-text-primary">{children}</h3>,
+    h1: ({ children }: { children?: React.ReactNode }) => <h1 className="mb-4 mt-6 text-xl font-semibold text-text-primary">{children}</h1>,
+    h2: ({ children }: { children?: React.ReactNode }) => <h2 className="mb-3 mt-5 text-lg font-semibold text-text-primary">{children}</h2>,
+    h3: ({ children }: { children?: React.ReactNode }) => <h3 className="mb-3 mt-4 text-base font-semibold text-text-primary">{children}</h3>,
     a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
-      <a href={href} target="_blank" rel="noreferrer" className="text-accent-primary underline decoration-accent-primary/30 underline-offset-2">
+      <a href={href} target="_blank" rel="noreferrer" className="text-accent-primary underline decoration-accent-primary/30 underline-offset-2 hover:decoration-accent-primary transition-colors">
         {children}
       </a>
     ),
     code: ({ inline, children }: { inline?: boolean; children?: React.ReactNode }) =>
       inline ? (
-        <code className="rounded bg-bg-overlay px-1.5 py-0.5 font-mono text-[0.92em] text-text-primary">{children}</code>
+        <code className="rounded bg-bg-overlay px-1.5 py-0.5 font-mono text-[0.92em] text-accent-secondary">{children}</code>
       ) : (
-        <code className="block overflow-x-auto rounded-xl border border-border-default bg-bg-surface px-4 py-3 font-mono text-[13px] leading-6 text-text-primary">{children}</code>
+        <code className="block overflow-x-auto rounded-xl border border-border-default bg-bg-surface px-4 py-3 mb-4 last:mb-0 font-mono text-[13px] leading-6 text-text-primary">{children}</code>
       ),
   }
 
