@@ -76,15 +76,15 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
           onClick={onClose}
         >
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
+            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 10 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="bg-bg-elevated rounded-xl shadow-modal max-w-3xl w-full max-h-[85vh] overflow-hidden"
+            className="bg-[#0f172a] border border-white/5 rounded-[24px] shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="px-6 py-4 border-b border-border-subtle">
+            <div className="px-6 py-5">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <h2 className="text-lg font-semibold text-text-primary">Document Vault</h2>
@@ -156,24 +156,24 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
             </div>
 
             {/* Search & Filters */}
-            <div className="px-6 py-3 border-b border-border-subtle">
+            <div className="px-6 py-2 pb-4">
               <div className="flex items-center gap-3">
                 <div className="relative flex-1">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
                   <input
                     type="text"
                     placeholder="Search documents..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-bg-surface border border-border-default rounded-lg pl-10 pr-4 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-primary transition-colors"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-2.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-primary focus:bg-white/[0.07] transition-all"
                   />
                 </div>
-                <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border-default text-sm text-text-secondary hover:bg-bg-overlay transition-colors">
+                <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 text-sm text-text-secondary hover:bg-white/10 hover:text-white transition-colors">
                   <Filter size={14} />
                   Filter
                   <ChevronDown size={14} />
                 </button>
-                <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border-default text-sm text-text-secondary hover:bg-bg-overlay transition-colors">
+                <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 text-sm text-text-secondary hover:bg-white/10 hover:text-white transition-colors">
                   Sort
                   <ChevronDown size={14} />
                 </button>
@@ -187,8 +187,8 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
             </div>
 
             {/* Document List */}
-            <div className="overflow-y-auto max-h-[400px]">
-              <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-bg-surface/50 text-xs font-medium text-text-muted uppercase tracking-wider border-b border-border-subtle">
+            <div className="overflow-y-auto flex-1 min-h-0 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+              <div className="grid grid-cols-12 gap-4 px-6 py-2 bg-black/20 text-[11px] font-semibold text-text-muted uppercase tracking-wider sticky top-0 z-10 backdrop-blur-md">
                 <div className="col-span-5">Name</div>
                 <div className="col-span-2">Created</div>
                 <div className="col-span-3">Status</div>
@@ -199,8 +199,8 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
                 <div
                   key={doc.id}
                   className={cn(
-                    'grid grid-cols-12 gap-4 px-6 py-3 border-b border-border-subtle items-center transition-colors',
-                    hoveredDoc === doc.id && 'bg-bg-overlay'
+                    'grid grid-cols-12 gap-4 px-6 py-3.5 items-center transition-colors border-b border-white/[0.02] hover:bg-white/[0.03]',
+                    hoveredDoc === doc.id && 'bg-white/[0.03]'
                   )}
                   onMouseEnter={() => setHoveredDoc(doc.id)}
                   onMouseLeave={() => setHoveredDoc(null)}
@@ -254,7 +254,7 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-3 border-t border-border-subtle flex items-center justify-between">
+            <div className="px-6 py-4 bg-black/20 flex items-center justify-between">
               <span className="text-sm text-text-muted">
                 Showing {visibleDocs.length} of {documents.length} documents
               </span>

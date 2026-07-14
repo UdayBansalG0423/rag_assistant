@@ -61,10 +61,11 @@ export default function Dashboard() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <div className="flex flex-1 min-h-0 flex-col">
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden relative">
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-bg-base to-transparent pointer-events-none z-10" />
             <ChatThread />
           </div>
-          <div className="border-t border-gray-800 p-4">
+          <div className="p-4 pt-0 relative z-20 pb-8">
             <div className="max-w-3xl mx-auto">
               <ChatInput />
             </div>

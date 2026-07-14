@@ -14,7 +14,7 @@ export function Sidebar() {
           animate={{ width: 260, opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.24, ease: 'easeInOut' }}
-          className="h-full bg-bg-surface border-r border-border-subtle flex flex-col overflow-hidden shrink-0"
+          className="h-full bg-bg-surface flex flex-col overflow-hidden shrink-0 relative z-20"
         >
           <div className="flex-1 overflow-hidden">
             <ChatSidebar />

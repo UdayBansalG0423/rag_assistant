@@ -1,17 +1,34 @@
-export function Logo({ className }: { className?: string }) {
+import { SVGProps } from "react"
+
+export function Logo(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      viewBox="0 0 38 38" 
-      className={className}
-    >
-      <rect x="7" y="5" width="16" height="20" rx="3" fill="none" stroke="#6366f1" strokeWidth="1.8"/>
-      <line x1="11" y1="11" x2="19" y2="11" stroke="#6366f1" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="11" y1="15" x2="19" y2="15" stroke="#6366f1" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="11" y1="19" x2="16" y2="19" stroke="#6366f1" strokeWidth="1.5" strokeLinecap="round"/>
-      <circle cx="27" cy="27" r="7" fill="#6366f1"/>
-      <path d="M24 27 Q27 23 30 27" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
-      <circle cx="27" cy="29" r="1.2" fill="#fff"/>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" {...props}>
+      <defs>
+        <linearGradient id="docGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#3b82f6" />
+          <stop offset="100%" stopColor="#1d4ed8" />
+        </linearGradient>
+        <linearGradient id="foldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#60a5fa" />
+          <stop offset="100%" stopColor="#2563eb" />
+        </linearGradient>
+      </defs>
+      
+      {/* Document Base */}
+      <path d="M140 40 h150 l100 100 v300 a32 32 0 0 1 -32 32 h-218 a32 32 0 0 1 -32 -32 v-368 a32 32 0 0 1 32 -32 z" fill="url(#docGrad)" />
+      
+      {/* Folded Corner */}
+      <path d="M290 40 v68 a32 32 0 0 0 32 32 h68 z" fill="url(#foldGrad)" />
+
+      {/* Text Lines */}
+      <rect x="180" y="200" width="140" height="24" rx="12" fill="#ffffff" opacity="0.9" />
+      <rect x="180" y="260" width="100" height="24" rx="12" fill="#ffffff" opacity="0.9" />
+      <rect x="180" y="320" width="120" height="24" rx="12" fill="#ffffff" opacity="0.9" />
+
+      {/* Magic Sparkles (AI) */}
+      <path d="M90 280 l 15 -35 l 35 -15 l -35 -15 l -15 -35 l -15 35 l -35 15 l 35 15 z" fill="#fbbf24" />
+      <path d="M80 150 l 8 -20 l 20 -8 l -20 -8 l -8 -20 l -8 20 l -20 8 l 20 8 z" fill="#fcd34d" />
+      <path d="M380 380 l 10 -25 l 25 -10 l -25 -10 l -10 -25 l -10 25 l -25 10 l 25 10 z" fill="#fcd34d" />
     </svg>
-  );
+  )
 }

@@ -7,6 +7,7 @@ import {
   Menu, X
 } from 'lucide-react'
 import { Button } from '@/components/ui'
+import { Logo } from '@/components/Logo'
 
 export default function LandingPage() {
   const navigate = useNavigate()
@@ -75,9 +76,13 @@ export default function LandingPage() {
         'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
         scrolled ? 'bg-bg-surface/80 backdrop-blur-xl border-b border-border-subtle shadow-lg' : 'bg-transparent'
       )}>
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-display font-bold gradient-text">◈ NeuralDoc</span>
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Logo className="w-12 h-12 shrink-0 text-accent-primary drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]" />
+            <div className="flex flex-col leading-tight mt-1">
+              <span className="text-2xl font-display font-bold text-white tracking-wide">NeuralDoc</span>
+              <span className="text-[10px] font-bold tracking-[0.25em] text-accent-primary">AI-POWERED DOCUMENT ASSISTANT</span>
+            </div>
           </div>
 
           {/* Desktop Nav */}
@@ -133,43 +138,43 @@ export default function LandingPage() {
       >
         {/* Background Effects */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(108,99,255,0.15),transparent)]" />
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
-            backgroundSize: '60px 60px'
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(59,130,246,0.12),transparent)]" />
+          <div className="absolute inset-0 mask-radial-faded" style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
+            backgroundSize: '80px 80px'
           }} />
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
           {/* Floating Badge */}
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-bg-glass backdrop-blur-sm border border-border-subtle mb-8"
+            transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] backdrop-blur-md mb-8 hover:bg-white/[0.05] transition-colors"
           >
-            <span className="text-accent-primary">✦</span>
-            <span className="text-sm text-text-secondary">Trusted by 5,000+ teams</span>
+            <span className="text-accent-primary">✨</span>
+            <span className="text-xs font-medium text-text-secondary tracking-wide">Trusted by 5,000+ teams globally</span>
           </motion.div>
 
           {/* Heading */}
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-5xl md:text-7xl font-display font-extrabold leading-tight mb-6"
+            transition={{ delay: 0.2, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.1]"
           >
             Talk to Your Documents.
             <br />
-            Get <span className="gradient-text">Answers</span>, Not Search Results.
+            Get <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">Answers</span>, Not Search Results.
           </motion.h1>
 
           {/* Subtitle */}
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="text-lg text-text-secondary max-w-2xl mx-auto mb-10"
+            transition={{ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed font-light"
           >
             Upload any PDF, doc, or file. NeuralDoc indexes it into your private AI knowledge base. 
             Ask questions. Get instant, cited answers — with full source tracing.
@@ -179,15 +184,15 @@ export default function LandingPage() {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.4, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Button size="lg" onClick={() => navigate('/signup')} className="flex items-center gap-2">
+            <Button size="lg" onClick={() => navigate('/signup')} className="flex items-center gap-2 h-12 px-8 text-base shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] transition-all">
               Start for Free
               <ArrowRight size={18} />
             </Button>
             <button
-              className="btn-secondary flex items-center gap-2"
+              className="flex items-center gap-2 h-12 px-8 rounded-lg text-base font-medium border border-border-default text-text-primary hover:bg-bg-overlay hover:border-border-subtle transition-all"
               onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
             >
               View Features
@@ -368,7 +373,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <span className="text-xl font-display font-bold gradient-text">◈ NeuralDoc</span>
+              <div className="flex items-center gap-2">
+                <Logo className="w-6 h-6 text-accent-primary" />
+                <span className="text-xl font-display font-bold text-white tracking-wide">NeuralDoc</span>
+              </div>
               <p className="text-sm text-text-secondary mt-2">Smarter conversations with your documents.</p>
             </div>
             <div>
